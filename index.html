@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0b0c" />
+    <meta name="description" content="An interactive dark Earth with travel pins and animated routes." />
+    <title>Field Atlas — Earth study</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root">
+      <main class="atlas atlas--visited" aria-label="Field Atlas interactive globe">
+        <div class="globe-host" aria-label="Interactive rotating Earth with travel pins"></div>
+        <header class="head">
+          <div class="head__brand"><span class="head__logo">CF<sup>®</sup></span><span class="head__gallery">THE PHOTO GALLERY ↗</span></div>
+          <p class="head__title">field <em>atlas</em></p>
+          <div class="head__stats"><span><b>18</b> countries</span><span class="head__dot"></span><span><b>49</b> places</span></div>
+        </header>
+        <h1 class="hero-title"><span>WHERE</span><span class="hero-title__italic">WE'VE BEEN</span></h1>
+        <nav class="controls" aria-label="Globe controls">
+          <div class="mode-toggle"><button class="mode-btn is-active">Visited</button><button class="mode-btn">Wishlist</button></div>
+          <button class="shuffle-btn">⤮ surprise me</button>
+        </nav>
+        <p class="hint">DRAG TO SPIN <span>—</span> CLICK A PIN</p>
+      </main>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

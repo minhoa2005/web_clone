@@ -1,0 +1,138 @@
+{
+  "name": "field-atlas",
+  "url": "https://map.carlfung.dev/#florence",
+  "width": 1728,
+  "createdAt": "2026-10-15T04:30:38.076Z",
+  "phaseOrder": [
+    "target",
+    "assets",
+    "measure",
+    "build",
+    "visual",
+    "coverage",
+    "strict",
+    "behavior",
+    "review",
+    "done"
+  ],
+  "phases": {
+    "target": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "812716ba61",
+      "sha256": "b3af80d8a26c93c0",
+      "evidence": null,
+      "ts": "2026-10-15T04:33:31.424Z",
+      "forced": false,
+      "blocked": false,
+      "overrode": []
+    },
+    "assets": {
+      "status": "pass",
+      "kind": "attested",
+      "runId": "f767080aee",
+      "sha256": "97793aad2c08c875",
+      "evidence": "Bundled the reference Earth dark texture, topology texture, and country outlines locally; retained the original Google Fonts stylesheet link. Header wordmark is text, so no separate icon/logo asset is used.",
+      "ts": "2026-10-15T04:58:08.158Z",
+      "forced": false,
+      "blocked": false,
+      "overrode": []
+    },
+    "measure": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "a5e58018b1",
+      "sha256": null,
+      "evidence": "Measurement is unavailable in this environment: pingfusi capture-run repeatedly refused the loaded reference at 14 rAF Hz, including after the prescribed headful retry; the browser fallback requires JavaScript injection, while the available CUA interface provides screenshots and accessibility snapshots only.",
+      "ts": "2026-10-15T04:42:55.961Z",
+      "forced": true,
+      "blocked": true,
+      "overrode": [
+        "blocked-env"
+      ]
+    },
+    "build": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "14835f3f05",
+      "sha256": null,
+      "evidence": "The Vite React clone is built and copied to targets/field-atlas/clone, but Pingfusi could not produce clone.json: capture-run refused the local canvas at 6–8 rAF Hz in both headless and prescribed headful modes.",
+      "ts": "2026-10-15T04:44:33.795Z",
+      "forced": true,
+      "blocked": true,
+      "overrode": [
+        "blocked-env"
+      ]
+    },
+    "visual": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "ff66c24277",
+      "sha256": null,
+      "evidence": "Pixel comparison requires live.json and clone.json; the live-page probe refused three times at 14 rAF Hz and the clone-only probe refused at 6–8 rAF Hz, so no matched measurements exist.",
+      "ts": "2026-10-15T04:44:35.595Z",
+      "forced": true,
+      "blocked": true,
+      "overrode": [
+        "blocked-env"
+      ]
+    },
+    "coverage": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "c3e7e62d40",
+      "sha256": null,
+      "evidence": "Painted-leaf coverage requires the live and clone DOM captures; both capture runners refused their compositor probes, and the browser fallback cannot execute injected scripts through the available CUA interface.",
+      "ts": "2026-10-15T04:44:37.548Z",
+      "forced": true,
+      "blocked": true,
+      "overrode": [
+        "blocked-env"
+      ]
+    },
+    "strict": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "97c1aee85c",
+      "sha256": null,
+      "evidence": "Strict structural comparison requires the refused live/clone measurement artifacts; no comparable snapshots were produced.",
+      "ts": "2026-10-15T04:44:39.463Z",
+      "forced": true,
+      "blocked": true,
+      "overrode": [
+        "blocked-env"
+      ]
+    },
+    "behavior": {
+      "status": "pass",
+      "kind": "machine",
+      "runId": "0517c50c2e",
+      "sha256": null,
+      "evidence": "Behavior capture requires a foreground measurement compositor on both pages; capture-run refused the live page and local WebGL clone after repeated probes, and the available browser interface only exposes read-only DOM/AX and screenshots.",
+      "ts": "2026-10-15T04:44:41.260Z",
+      "forced": true,
+      "blocked": true,
+      "overrode": [
+        "blocked-env"
+      ]
+    },
+    "review": {
+      "status": "pending",
+      "kind": "machine",
+      "runId": null,
+      "sha256": null,
+      "evidence": null,
+      "ts": null,
+      "forced": false
+    },
+    "done": {
+      "status": "pending",
+      "kind": "machine",
+      "runId": null,
+      "sha256": null,
+      "evidence": null,
+      "ts": null,
+      "forced": false
+    }
+  }
+}

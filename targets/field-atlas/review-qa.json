@@ -1,0 +1,22 @@
+{
+  "rounds": [
+    {
+      "ping_id": "414dd457-7be0-4d5b-bb5a-c4fb9ec9d9c2",
+      "draft_url": "https://pingfusi.com/d/q9QW9tL0Oo4O",
+      "region": "map.carlfung.dev — is the clone identical? (round 1)",
+      "n_target": 1,
+      "approve_verdicts": [
+        "Cloned region identical"
+      ],
+      "verdict_options": [
+        "Cloned region identical",
+        "Cloned region slightly off",
+        "Cloned region clearly different"
+      ],
+      "review_contract": null,
+      "filed_at": "2026-10-15T05:05:51.130Z",
+      "last": null,
+      "checked_at": null
+    }
+  ]
+}
