@@ -4,6 +4,41 @@ import { HOME, PLACES, WISHLIST } from './places.js';
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
 const placeMap = new Map([...PLACES, ...WISHLIST].map((place) => [place.id, place]));
+const PHOTO_ROOT = 'https://map.carlfung.dev/';
+const REGION_ORDER = ['North America', 'Asia', 'Europe', 'South America', 'Africa', 'Oceania'];
+const COUNTRY_REGION = {
+  'United States': 'North America', Canada: 'North America', Mexico: 'North America',
+  Bahamas: 'North America', 'Caribbean Sea': 'North America',
+  Japan: 'Asia', Thailand: 'Asia', Indonesia: 'Asia', Malaysia: 'Asia', Maldives: 'Asia',
+  'Hong Kong': 'Asia', China: 'Asia', 'South Korea': 'Asia', Vietnam: 'Asia', Bhutan: 'Asia',
+  'United Arab Emirates': 'Asia',
+  'United Kingdom': 'Europe', Norway: 'Europe', France: 'Europe', Iceland: 'Europe', Italy: 'Europe',
+  'Vatican City': 'Europe', Netherlands: 'Europe', Belgium: 'Europe', Greece: 'Europe',
+  Switzerland: 'Europe', Germany: 'Europe', Austria: 'Europe', Turkey: 'Europe',
+  Peru: 'South America', Chile: 'South America', Bolivia: 'South America',
+  Fiji: 'Oceania', 'New Zealand': 'Oceania', Australia: 'Oceania',
+};
+
+function groupPlaces(places) {
+  const regions = new Map();
+  places.forEach((place) => {
+    const region = COUNTRY_REGION[place.country] || 'Other';
+    if (!regions.has(region)) regions.set(region, new Map());
+    const countries = regions.get(region);
+    if (!countries.has(place.country)) countries.set(place.country, []);
+    countries.get(place.country).push(place);
+  });
+  return [...regions.entries()].sort(([a], [b]) => {
+    const aIndex = REGION_ORDER.indexOf(a);
+    const bIndex = REGION_ORDER.indexOf(b);
+    return (aIndex < 0 ? 99 : aIndex) - (bIndex < 0 ? 99 : bIndex);
+  });
+}
+
+function photoUrl(photo) {
+  if (!photo?.src) return '';
+  return /^https?:\/\//i.test(photo.src) ? photo.src : new URL(photo.src.replace(/^\//, ''), PHOTO_ROOT).href;
+}
 
 function Pin({ place, kind, onPick }) {
   const element = document.createElement('button');
@@ -42,8 +77,8 @@ function GlobeStage({ mode, selected, onPick }) {
 
     const globe = Globe()(host)
       .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl('/assets/earth-dark.jpg')
-      .bumpImageUrl('/assets/earth-topology.png')
+      .globeImageUrl(`${import.meta.env.BASE_URL}assets/earth-dark.jpg`)
+      .bumpImageUrl(`${import.meta.env.BASE_URL}assets/earth-topology.png`)
       .showAtmosphere(true)
       .atmosphereColor('#e6402e')
       .atmosphereAltitude(0.13)
@@ -78,7 +113,7 @@ function GlobeStage({ mode, selected, onPick }) {
     host.addEventListener('wheel', pauseAndResume, { passive: true });
 
     let countryFeatures = [];
-    fetch('/assets/countries-50m.geojson')
+    fetch(`${import.meta.env.BASE_URL}assets/countries-50m.geojson`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Country outlines unavailable')))
       .then((geo) => {
         countryFeatures = geo.features || [];
@@ -150,13 +185,14 @@ function GlobeStage({ mode, selected, onPick }) {
 }
 
 export default function App() {
+  const initialPlace = placeMap.get(decodeURIComponent(window.location.hash.slice(1))) || placeMap.get('florence');
   const [mode, setMode] = useState(() => {
-    const initial = placeMap.get(decodeURIComponent(window.location.hash.slice(1)));
-    return initial && !PLACES.includes(initial) ? 'wishlist' : 'visited';
+    return initialPlace && !PLACES.includes(initialPlace) ? 'wishlist' : 'visited';
   });
-  const [selected, setSelected] = useState(() => placeMap.get(decodeURIComponent(window.location.hash.slice(1))) || null);
+  const [selected, setSelected] = useState(initialPlace);
   const list = LISTS[mode];
   const countryCount = useMemo(() => new Set(list.map((place) => place.country)).size, [list]);
+  const groupedPlaces = useMemo(() => groupPlaces(list), [list]);
 
   const choosePlace = useCallback((place) => {
     setSelected(place);
@@ -223,13 +259,39 @@ export default function App() {
 
       <p className="hint">DRAG TO SPIN <span>—</span> CLICK A PIN</p>
 
+      <nav className="places-nav" aria-label={`${mode === 'visited' ? 'Visited' : 'Wishlist'} places`}>
+        {groupedPlaces.map(([region, countries]) => {
+          const regionCount = [...countries.values()].reduce((total, places) => total + places.length, 0);
+          return <section className="places-region" key={region}>
+            <h2 className="places-region__title"><span>{region}</span><span>{regionCount}</span></h2>
+            {[...countries.entries()].map(([country, places]) => <div className="places-country" key={country}>
+              <h3>{country}</h3>
+              {places.map((place) => <button
+                className={`places-link${selected?.id === place.id ? ' is-active' : ''}`}
+                key={place.id}
+                onClick={() => choosePlace(place)}
+                aria-current={selected?.id === place.id ? 'location' : undefined}
+              >
+                <span>{String((place.photos || []).filter(Boolean).length).padStart(2, '0')}</span>
+                <span>{place.city}</span>
+              </button>)}
+            </div>)}
+          </section>;
+        })}
+      </nav>
+
       <aside className={`place-panel${selected ? ' place-panel--open' : ''}`} aria-hidden={!selected}>
         <button className="place-panel__close" aria-label="Close place details" onClick={closePlace}>×</button>
         {selected && <>
           <p className="place-panel__country">{mode === 'wishlist' ? `ON THE WISHLIST · ${selected.country}` : selected.country}</p>
           <h2>{selected.city}</h2>
           <p className="place-panel__note">{selected.note || 'A place to remember.'}</p>
-          <div className="place-panel__rule" />
+          {mode === 'visited' && <div className="place-photos" aria-label={`${selected.city} photos`}>
+            {(selected.photos || []).filter(Boolean).map((photo, index) => <figure className="place-photo" key={`${photo.src}-${index}`}>
+              <img src={photoUrl(photo)} alt={photo.title || selected.city} loading={index > 1 ? 'lazy' : 'eager'} onError={(event) => { event.currentTarget.closest('figure')?.classList.add('place-photo--missing'); }} />
+              <figcaption><span>{photo.title || selected.city}</span><span>{String(index + 1).padStart(2, '0')}</span></figcaption>
+            </figure>)}
+          </div>}
           <p className="place-panel__coordinates">{selected.lat.toFixed(2)}° {selected.lat >= 0 ? 'N' : 'S'} <span>·</span> {Math.abs(selected.lng).toFixed(2)}° {selected.lng >= 0 ? 'E' : 'W'}</p>
         </>}
       </aside>

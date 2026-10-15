@@ -57,6 +57,22 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .hint span { padding: 0 3px; }
 .atlas--wishlist .hint { color: var(--vermilion); }
 
+.places-nav {
+  position: absolute; z-index: 18; top: 74px; right: clamp(20px,4vw,56px); bottom: 74px;
+  width: clamp(170px,17vw,260px); overflow: auto; padding: 2px 4px 20px 10px;
+  scrollbar-width: thin; scrollbar-color: rgba(236,231,222,.2) transparent;
+  color: var(--muted); text-align: right; mask-image: linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+}
+.places-region { margin: 0 0 24px; }
+.places-region__title { display: flex; justify-content: flex-end; gap: 10px; margin: 0 0 10px; color: rgba(236,231,222,.38); font-size: 9px; font-weight: 500; letter-spacing: .24em; text-transform: uppercase; }
+.places-region__title span:last-child { color: var(--vermilion); }
+.places-country { margin: 0 0 10px; }
+.places-country h3 { margin: 0 0 4px; color: rgba(236,231,222,.8); font: italic 400 13px/1.4 var(--serif); }
+.places-link { display: flex; justify-content: flex-end; gap: 9px; width: 100%; padding: 3px 0; border: 0; background: transparent; color: rgba(236,231,222,.58); cursor: pointer; font-size: 9px; letter-spacing: .13em; line-height: 1.4; text-transform: uppercase; transition: color .2s ease; }
+.places-link span:first-child { color: rgba(236,231,222,.34); font-size: 8px; }
+.places-link:hover, .places-link.is-active { color: var(--vermilion); }
+.places-link.is-active span:first-child { color: var(--vermilion); }
+
 .pin { position: relative; display: block; width: 14px; height: 14px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; pointer-events: auto; }
 .pin__dot, .pin__pulse { position: absolute; inset: 0; display: block; border: 1px solid rgba(230,64,46,.82); border-radius: 50%; }
 .pin__dot::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--vermilion); box-shadow: 0 0 12px rgba(230,64,46,.9); }
@@ -69,7 +85,7 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .pin__label { position: absolute; top: -3px; left: 20px; color: var(--bone); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; text-shadow: 0 0 8px rgba(11,11,12,.9); white-space: nowrap; opacity: 0; transition: opacity .3s; }
 .pin:hover .pin__label, .pin:focus-visible .pin__label { opacity: 1; }
 
-.place-panel { position: absolute; z-index: 30; inset: 0 auto 0 0; width: min(420px,92vw); padding: 90px clamp(22px,3vw,40px) 40px max(clamp(22px,3vw,40px),env(safe-area-inset-left)); border-right: 1px solid var(--hairline); background: rgba(11,11,12,.92); backdrop-filter: blur(14px); transform: translateX(-101%); visibility: hidden; transition: transform .7s cubic-bezier(.65,0,.35,1), visibility 0s .7s; }
+.place-panel { position: absolute; z-index: 30; inset: 0 auto 0 0; width: min(420px,92vw); overflow-y: auto; padding: 90px clamp(22px,3vw,40px) 40px max(clamp(22px,3vw,40px),env(safe-area-inset-left)); border-right: 1px solid var(--hairline); background: rgba(11,11,12,.94); backdrop-filter: blur(14px); transform: translateX(-101%); visibility: hidden; transition: transform .7s cubic-bezier(.65,0,.35,1), visibility 0s .7s; }
 .place-panel--open { transform: translateX(0); visibility: visible; transition: transform .9s cubic-bezier(.16,1,.3,1), visibility 0s; }
 .place-panel__close { position: absolute; top: 24px; right: 22px; width: 38px; height: 38px; border: 1px solid var(--hairline); border-radius: 50%; background: transparent; color: var(--bone); font-size: 18px; cursor: pointer; transition: border-color .3s,color .3s; }
 .place-panel__close:hover { border-color: var(--vermilion); color: var(--vermilion); }
@@ -79,6 +95,11 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .place-panel__rule { width: 100%; height: 1px; background: var(--hairline); }
 .place-panel__coordinates { margin-top: 16px; color: var(--muted); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; }
 .place-panel__coordinates span { color: var(--vermilion); padding: 0 5px; }
+.place-photos { display: grid; gap: 18px; margin-top: 24px; }
+.place-photo { position: relative; min-height: 140px; margin: 0; overflow: hidden; background: #161617; }
+.place-photo img { display: block; width: 100%; aspect-ratio: 1 / 1.08; object-fit: cover; filter: grayscale(1) contrast(1.02); }
+.place-photo figcaption { position: absolute; inset: auto 0 0; display: flex; justify-content: space-between; gap: 10px; padding: 22px 12px 10px; background: linear-gradient(transparent,rgba(0,0,0,.75)); color: var(--bone); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+.place-photo--missing { display: none; }
 
 @media (max-width: 760px) {
   .head { padding-top: max(18px,env(safe-area-inset-top)); }
@@ -91,6 +112,7 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
   .shuffle-btn { padding: 11px 13px; font-size: 9px; letter-spacing: .12em; }
   .hint { bottom: 22px; white-space: nowrap; font-size: 9px; letter-spacing: .22em; }
   .place-panel { padding-top: 82px; }
+  .places-nav { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

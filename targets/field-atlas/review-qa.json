@@ -15,8 +15,52 @@
       ],
       "review_contract": null,
       "filed_at": "2026-10-15T05:05:51.130Z",
-      "last": null,
-      "checked_at": null
+      "last": {
+        "status": "complete",
+        "n_received": 1,
+        "n_target": 1,
+        "result_sha256": "2613cb5bbd7e81138b588a0101cc985b194c026ff710d2c00a99e8602f608347",
+        "responses": [
+          {
+            "verdict": "Cloned region clearly different",
+            "notes": "1 comment(s): ? — The globe and the images and lists are not rendered",
+            "steps_result": [
+              {
+                "via": "manual",
+                "done": true,
+                "text": "Open the original and the clone side by side at the same window size. You are judging the cloned region of map.carlfung.dev. Everything outside it is out of scope — ignore it for your verdict.",
+                "answer": null
+              },
+              {
+                "via": null,
+                "done": false,
+                "text": "KNOWN GAP — could not be verified in this build environment: measure (Measurement is unavailable in this environment: pingfusi capture-run repeatedly ) | build (The Vite React clone is built and copied to targets/field-atlas/clone, but Pingf) | visual (Pixel comparison requires live.json and clone.j",
+                "answer": null
+              },
+              {
+                "via": null,
+                "done": false,
+                "text": "Squint test: at a glance, could you tell which is the clone? Compare overall font weight/sharpness in the cloned region.",
+                "answer": null
+              },
+              {
+                "via": null,
+                "done": false,
+                "text": "If anything in the cloned region looked off — including motion that is missing, different, or mistimed — describe exactly what and where in your notes. Attach a screenshot showing both.",
+                "answer": null
+              }
+            ]
+          }
+        ],
+        "comments": [
+          {
+            "step_index": 0,
+            "text": "The globe and the images and lists are not rendered",
+            "text_sha256": "88e1725635c7acec08774fb67853f54ab139869d9541b53b5c4f11124a1916eb"
+          }
+        ]
+      },
+      "checked_at": "2026-10-15T08:00:52.943Z"
     }
   ]
 }
