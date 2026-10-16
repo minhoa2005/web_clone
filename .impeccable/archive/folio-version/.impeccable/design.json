@@ -1,0 +1,341 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T15:46:47.895Z",
+  "title": "Design System: Dòng chảy lịch sử",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0197 87.51)",
+          "oklch(26.43% 0.0197 87.51)",
+          "oklch(37.86% 0.0197 87.51)",
+          "oklch(49.29% 0.0197 87.51)",
+          "oklch(60.71% 0.0197 87.51)",
+          "oklch(72.14% 0.0197 87.51)",
+          "oklch(83.57% 0.0197 87.51)",
+          "oklch(95% 0.0197 87.51)"
+        ]
+      },
+      "paper-light": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0139 88.68)",
+          "oklch(26.43% 0.0139 88.68)",
+          "oklch(37.86% 0.0139 88.68)",
+          "oklch(49.29% 0.0139 88.68)",
+          "oklch(60.71% 0.0139 88.68)",
+          "oklch(72.14% 0.0139 88.68)",
+          "oklch(83.57% 0.0139 88.68)",
+          "oklch(95% 0.0139 88.68)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0132 87.57)",
+          "oklch(26.43% 0.0132 87.57)",
+          "oklch(37.86% 0.0132 87.57)",
+          "oklch(49.29% 0.0132 87.57)",
+          "oklch(60.71% 0.0132 87.57)",
+          "oklch(72.14% 0.0132 87.57)",
+          "oklch(83.57% 0.0132 87.57)",
+          "oklch(95% 0.0132 87.57)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0203 81.27)",
+          "oklch(26.43% 0.0203 81.27)",
+          "oklch(37.86% 0.0203 81.27)",
+          "oklch(49.29% 0.0203 81.27)",
+          "oklch(60.71% 0.0203 81.27)",
+          "oklch(72.14% 0.0203 81.27)",
+          "oklch(83.57% 0.0203 81.27)",
+          "oklch(95% 0.0203 81.27)"
+        ]
+      },
+      "red": {
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.1353 25.85)",
+          "oklch(26.43% 0.1353 25.85)",
+          "oklch(37.86% 0.1353 25.85)",
+          "oklch(49.29% 0.1353 25.85)",
+          "oklch(60.71% 0.1353 25.85)",
+          "oklch(72.14% 0.1353 25.85)",
+          "oklch(83.57% 0.1353 25.85)",
+          "oklch(95% 0.1353 25.85)"
+        ]
+      },
+      "red-hover": {
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(15% 0.1144 26.72)",
+          "oklch(26.43% 0.1144 26.72)",
+          "oklch(37.86% 0.1144 26.72)",
+          "oklch(49.29% 0.1144 26.72)",
+          "oklch(60.71% 0.1144 26.72)",
+          "oklch(72.14% 0.1144 26.72)",
+          "oklch(83.57% 0.1144 26.72)",
+          "oklch(95% 0.1144 26.72)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0263 84.59)",
+          "oklch(26.43% 0.0263 84.59)",
+          "oklch(37.86% 0.0263 84.59)",
+          "oklch(49.29% 0.0263 84.59)",
+          "oklch(60.71% 0.0263 84.59)",
+          "oklch(72.14% 0.0263 84.59)",
+          "oklch(83.57% 0.0263 84.59)",
+          "oklch(95% 0.0263 84.59)"
+        ]
+      },
+      "selected-paper": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0276 83.54)",
+          "oklch(26.43% 0.0276 83.54)",
+          "oklch(37.86% 0.0276 83.54)",
+          "oklch(49.29% 0.0276 83.54)",
+          "oklch(60.71% 0.0276 83.54)",
+          "oklch(72.14% 0.0276 83.54)",
+          "oklch(83.57% 0.0276 83.54)",
+          "oklch(95% 0.0276 83.54)"
+        ]
+      },
+      "button-text": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0187 83.06)",
+          "oklch(26.43% 0.0187 83.06)",
+          "oklch(37.86% 0.0187 83.06)",
+          "oklch(49.29% 0.0187 83.06)",
+          "oklch(60.71% 0.0187 83.06)",
+          "oklch(72.14% 0.0187 83.06)",
+          "oklch(83.57% 0.0187 83.06)",
+          "oklch(95% 0.0187 83.06)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0130 82.40)",
+          "oklch(26.43% 0.0130 82.40)",
+          "oklch(37.86% 0.0130 82.40)",
+          "oklch(49.29% 0.0130 82.40)",
+          "oklch(60.71% 0.0130 82.40)",
+          "oklch(72.14% 0.0130 82.40)",
+          "oklch(83.57% 0.0130 82.40)",
+          "oklch(95% 0.0130 82.40)"
+        ]
+      },
+      "world": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0149 166.35)",
+          "oklch(26.43% 0.0149 166.35)",
+          "oklch(37.86% 0.0149 166.35)",
+          "oklch(49.29% 0.0149 166.35)",
+          "oklch(60.71% 0.0149 166.35)",
+          "oklch(72.14% 0.0149 166.35)",
+          "oklch(83.57% 0.0149 166.35)",
+          "oklch(95% 0.0149 166.35)"
+        ]
+      },
+      "world-ink": {
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(15% 0.0234 93.35)",
+          "oklch(26.43% 0.0234 93.35)",
+          "oklch(37.86% 0.0234 93.35)",
+          "oklch(49.29% 0.0234 93.35)",
+          "oklch(60.71% 0.0234 93.35)",
+          "oklch(72.14% 0.0234 93.35)",
+          "oklch(83.57% 0.0234 93.35)",
+          "oklch(95% 0.0234 93.35)"
+        ]
+      },
+      "land": {
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0365 130.95)",
+          "oklch(26.43% 0.0365 130.95)",
+          "oklch(37.86% 0.0365 130.95)",
+          "oklch(49.29% 0.0365 130.95)",
+          "oklch(60.71% 0.0365 130.95)",
+          "oklch(72.14% 0.0365 130.95)",
+          "oklch(83.57% 0.0365 130.95)",
+          "oklch(95% 0.0365 130.95)"
+        ]
+      },
+      "geographic-emphasis": {
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0716 85.63)",
+          "oklch(26.43% 0.0716 85.63)",
+          "oklch(37.86% 0.0716 85.63)",
+          "oklch(49.29% 0.0716 85.63)",
+          "oklch(60.71% 0.0716 85.63)",
+          "oklch(72.14% 0.0716 85.63)",
+          "oklch(83.57% 0.0716 85.63)",
+          "oklch(95% 0.0716 85.63)"
+        ]
+      },
+      "geographic-hover": {
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0869 84.11)",
+          "oklch(26.43% 0.0869 84.11)",
+          "oklch(37.86% 0.0869 84.11)",
+          "oklch(49.29% 0.0869 84.11)",
+          "oklch(60.71% 0.0869 84.11)",
+          "oklch(72.14% 0.0869 84.11)",
+          "oklch(83.57% 0.0869 84.11)",
+          "oklch(95% 0.0869 84.11)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Chronological year",
+        "purpose": "Selected year in the narrative."
+      },
+      "headline": {
+        "displayName": "Event heading",
+        "purpose": "Balanced primary event title."
+      },
+      "body": {
+        "displayName": "Vietnamese prose",
+        "purpose": "Sustained historical reading."
+      }
+    },
+    "shadows": [
+      {
+        "name": "mobile-dock",
+        "value": "0 -5px 20px rgb(36 30 22 / .07)",
+        "purpose": "Separate the fixed phone timeline from reading content."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "150ms ease",
+        "purpose": "Color and background only; enabled only with no reduced-motion preference."
+      },
+      {
+        "name": "camera-focus",
+        "value": "550ms",
+        "purpose": "One camera move after record/place/zoom selection; 0ms with reduced motion."
+      },
+      {
+        "name": "idle-wake",
+        "value": "180ms",
+        "purpose": "Default render wake before pausing at rest; camera wake is duration plus 200ms; wheel uses 240ms. Hidden documents pause immediately."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-max",
+        "value": "760px"
+      },
+      {
+        "name": "compact-desktop-max",
+        "value": "1100px"
+      },
+      {
+        "name": "wide-desktop-min",
+        "value": "1600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Next action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled chronological next action.",
+      "html": "<button class=\"ds-primary\">Tiếp theo<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"20\" height=\"20\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-primary{font:400 10px 'Be Vietnam Pro',Arial,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:22px;min-height:44px;padding:10px 18px;border:1px solid var(--red);border-radius:0;background:var(--red);color:#fff8eb;cursor:pointer}.ds-primary:hover:not(:disabled){background:#752420;color:#fff8eb}.ds-primary:disabled{opacity:.35;cursor:default}.ds-primary:focus-visible,.ds-icon:focus-visible,.ds-search input:focus-visible,.ds-period:focus-visible,.ds-evidence:focus-visible,.ds-page:focus-visible {outline:2px solid var(--red);outline-offset:4px;}@media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease,color .15s ease;}}"
+    },
+    {
+      "name": "Previous action",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Outlined square chronological previous action.",
+      "html": "<button class=\"ds-icon\" aria-label=\"Sự kiện trước\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"20\" height=\"20\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-icon{width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:10px;border:1px solid #cbbfa9;border-radius:0;background:transparent;color:var(--ink);cursor:pointer}.ds-icon svg{transform:rotate(180deg)}.ds-icon:hover:not(:disabled){color:var(--red)}.ds-icon:disabled{opacity:.35;cursor:default}.ds-primary:focus-visible,.ds-icon:focus-visible,.ds-search input:focus-visible,.ds-period:focus-visible,.ds-evidence:focus-visible,.ds-page:focus-visible {outline:2px solid var(--red);outline-offset:4px;}@media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease,color .15s ease;}}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Labeled search used in the contents drawer.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"20\" height=\"20\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m16 16 5 5\"/></svg><input aria-label=\"Tìm sự kiện\" placeholder=\"Tìm sự kiện, năm, địa danh…\"></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:#fffaf1;padding:12px;color:var(--ink)}.ds-search input{min-width:0;flex:1;border:0;background:transparent;color:var(--ink);font:400 13px/1.8 'Be Vietnam Pro',Arial,sans-serif}.ds-search input::placeholder{color:var(--muted)}.ds-primary:focus-visible,.ds-icon:focus-visible,.ds-search input:focus-visible,.ds-period:focus-visible,.ds-evidence:focus-visible,.ds-page:focus-visible {outline:2px solid var(--red);outline-offset:4px;}@media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease,color .15s ease;}}"
+    },
+    {
+      "name": "Selected period",
+      "kind": "nav",
+      "refersTo": "period-selected",
+      "description": "A selected learning period with a red top rule.",
+      "html": "<nav aria-label=\"Giai đoạn\"><button class=\"ds-period\" aria-current=\"step\"><small>01</small><span><b>1911–1930</b><span>Hình thành con đường cách mạng</span></span></button></nav>",
+      "css": ".ds-period{position:relative;display:flex;gap:12px;align-items:center;text-align:left;padding:12px 20px;border:0;border-right:1px solid var(--line);border-radius:0;background:#e9dfcc;color:var(--red);font-family:'Be Vietnam Pro',Arial,sans-serif;cursor:pointer}.ds-period:before{content:'';position:absolute;top:-1px;inset-inline:0;height:2px;background:var(--red)}.ds-period>small{align-self:flex-start;margin-top:3px;font:400 11px 'Noto Serif',Georgia,serif;color:#887b67}.ds-period>span{display:grid;gap:6px}.ds-period b{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}.ds-period span>span{color:var(--muted);font-size:9px;line-height:1.5}.ds-period:hover{color:var(--red)}.ds-primary:focus-visible,.ds-icon:focus-visible,.ds-search input:focus-visible,.ds-period:focus-visible,.ds-evidence:focus-visible,.ds-page:focus-visible {outline:2px solid var(--red);outline-offset:4px;}@media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease,color .15s ease;}}"
+    },
+    {
+      "name": "Evidence preview",
+      "kind": "card",
+      "refersTo": "source-container",
+      "description": "Ruled evidence row; the book icon stands in for a textbook-page thumbnail.",
+      "html": "<button class=\"ds-evidence\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"20\" height=\"20\" aria-hidden=\"true\"><path d=\"M12 5v15M3 4c4-1 6 0 9 2 3-2 5-3 9-2v15c-4-1-6 0-9 2-3-2-5-3-9-2Z\"/></svg><span><small>Đối chiếu tư liệu</small><b>Giáo trình 2021</b><small>Đọc nguồn và chú thích</small></span><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"20\" height=\"20\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-evidence{display:flex;align-items:center;gap:15px;width:100%;padding:18px 0;text-align:left;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:transparent;color:var(--ink);font-family:'Be Vietnam Pro',Arial,sans-serif;cursor:pointer}.ds-evidence>span{flex:1;display:grid;gap:7px}.ds-evidence small{color:var(--muted);font-size:9px}.ds-evidence b{font-size:11px;font-weight:500;line-height:1.6}.ds-evidence:hover{color:var(--red)}.ds-primary:focus-visible,.ds-icon:focus-visible,.ds-search input:focus-visible,.ds-period:focus-visible,.ds-evidence:focus-visible,.ds-page:focus-visible {outline:2px solid var(--red);outline-offset:4px;}@media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease,color .15s ease;}}"
+    },
+    {
+      "name": "Source page tab",
+      "kind": "button",
+      "description": "Selected textbook-page control.",
+      "html": "<button class=\"ds-page\" aria-pressed=\"true\">Trang 48</button>",
+      "css": ".ds-page{min-height:44px;padding:10px 14px;border:1px solid var(--red);border-radius:0;background:#eee2ce;color:var(--red);font:400 11px 'Be Vietnam Pro',Arial,sans-serif;cursor:pointer}.ds-page:hover{color:var(--red)}.ds-primary:focus-visible,.ds-icon:focus-visible,.ds-search input:focus-visible,.ds-period:focus-visible,.ds-evidence:focus-visible,.ds-page:focus-visible {outline:2px solid var(--red);outline-offset:4px;}@media(prefers-reduced-motion:no-preference){button{transition:background-color .15s ease,color .15s ease;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Annotated Historical Folio",
+    "overview": "Warm paper, scholarly serif headings and restrained red annotations give the interface the character of a working historical volume. Vietnamese reading is primary; compact references and controls support a spacious account rather than compete with it.\n\nThe dark olive geographic field is a quiet companion to the paper. Its globe focuses on a selected record and settles. Opaque surfaces, fine rules and a book-derived mark preserve the approved editorial character; generated imagery, decorative particles and continuous visual effects have no role in this world.",
+    "keyCharacteristics": [
+      "Warm paper and dark olive tonal contrast.",
+      "Serif dates and headings paired with Vietnamese reading typography.",
+      "Square controls, fine rules and restrained red annotations.",
+      "Geographic movement that settles after a deliberate selection."
+    ],
+    "rules": [
+      {
+        "name": "The Annotation Rule",
+        "body": "Red marks selection, evidence and action; it does not become a broad decorative background.",
+        "section": "colors"
+      },
+      {
+        "name": "The Quiet Surface Rule",
+        "body": "Use fine rules and tonal contrast for structure; reserve elevation for the fixed mobile dock and modal separation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep Vietnamese reading and its diacritics clear in the shipped font pairing.",
+      "Do use red for selected chronology, evidence and deliberate actions.",
+      "Do preserve square controls, fine rules and opaque paper surfaces.",
+      "Do keep the collapsed mobile dock clear of reading content and respect safe-area insets.",
+      "Do let the globe settle and retain the 2D reading fallback."
+    ],
+    "donts": [
+      "Don't add decorative particles, continuous rotation, grain or pulsing routes.",
+      "Don't replace the editorial rules with rounded floating cards or blurred glass.",
+      "Don't show a textbook page reproduction as an event photograph.",
+      "Don't hide focus states or make dragging the only way to navigate.",
+      "Don't imply that map geometry depicts historical borders or that timeline spacing measures duration."
+    ]
+  }
+}

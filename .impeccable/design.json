@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T00:00:00+07:00",
+  "title": "Original clone — historical content",
+  "extensions": {
+    "northStar": "Preserve original clone. Change history content only. User correction 16 October 2026.",
+    "breakpoints": {
+      "mobile": "760px"
+    },
+    "rules": [
+      "src/style.css at ef7b1dd is the visual authority.",
+      "Folio redesign is rejected and archived."
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "original": {
+    "elapsedSeconds": 238.56779299999835,
+    "taskSeconds": 88.89019499999999,
+    "scriptSeconds": 87.525396
+  },
+  "redesign": {
+    "elapsedSeconds": 50.038572999997996,
+    "taskSeconds": 0.0020450000000000745,
+    "scriptSeconds": 0,
+    "heapMB": 27.48067855834961
+  },
+  "scope": "Local production build, Codex in-app Chromium; idle scene comparison, not FPS or physical-phone benchmark"
+}
