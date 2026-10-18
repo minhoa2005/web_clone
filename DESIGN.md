@@ -35,7 +35,7 @@ Preserve pill controls, circular pins and close action, and original rectangular
 
 ## Components
 
-The original two-mode switch now selects two chronological ranges. The place list groups historical events by period and year. Detail notes contain historical text; photo slots contain identified textbook pages, with full-page links. The random exploration action, dragging, zoom, focus camera and Escape-to-close remain.
+The original two-mode switch selects two chronological ranges. The place list groups historical events by period and year. Detail notes contain historical text; photo slots contain identified textbook pages, with full-page links. Dragging, zoom, focus camera and Escape-to-close remain. The user's 18 October cleanup removes the hero text, top-left branding, summary counts, gesture instructions and random exploration action. Keep the centered title and chronological controls. Event-location choices reuse the existing list-button appearance inside the detail panel. Selecting a location centers its marker and highlights only its country; selected views do not auto-rotate. Connection lines are steady, never shooting dashes. Intentional selections use a 1.5-second camera journey and one-second country highlight rise/fall, as explicitly requested by the user. Initial loading honors reduced motion. The event list has no top fade obscuring its first heading. Scrollable lists and detail panels share narrow warm-gray thumbs on transparent dark tracks, with red hover and no arrow buttons. Era changes reset the event list to its start.
 
 ## Do's and Don'ts
 
