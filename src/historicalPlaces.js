@@ -36,8 +36,19 @@ export const HISTORICAL_PLACES = EVENTS.map((event) => {
 
 export const PLACES = HISTORICAL_PLACES.filter((event) => ['preparation', 'formation'].includes(event.period));
 export const WISHLIST = HISTORICAL_PLACES.filter((event) => !PLACES.includes(event));
-export const HOME = { id: 'home', city: 'Việt Nam', country: 'Việt Nam', lat: 21.0285, lng: 105.8542 };
 export const REGION_ORDER = PERIODS.map((period) => `${period.range} · ${period.title}`);
+
+export function eventLocation(event, locationId) {
+  const id = event?.places.includes(locationId) ? locationId : event?.places[0];
+  if (!id) return null;
+  const [country, mapCountry] = COUNTRIES[id];
+  return { ...LOCATIONS[id], country, mapCountry };
+}
+
+export function highlightedCountries(list, selected, locationId) {
+  const location = eventLocation(selected, locationId);
+  return location ? [location.mapCountry] : [];
+}
 
 export function historicalPins(list, selected) {
   const pins = new Map();
@@ -45,7 +56,8 @@ export function historicalPins(list, selected) {
     for (const id of event.places) {
       if (!pins.has(id) || event.id === selected?.id) {
         const location = LOCATIONS[id];
-        pins.set(id, { ...event, lat: location.lat, lng: location.lng, city: location.name });
+        const [country, mapCountry] = COUNTRIES[id];
+        pins.set(id, { ...event, locationId: id, lat: location.lat, lng: location.lng, city: location.name, country, mapCountry });
       }
     }
   }

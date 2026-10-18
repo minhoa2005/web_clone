@@ -1,6 +1,6 @@
 # Lịch sử Đảng — original clone, historical content
 
-The original Field Atlas clone supplies the unchanged visual presentation: dark satellite Earth, red atmosphere, pulsing pins, floating two-mode controls, right-hand list and left slide-out detail panel. The stylesheet is identical to commit `ef7b1dd`. The rejected folio redesign is archived in `.impeccable/archive/folio-version/` and is not the current direction.
+The original Field Atlas clone supplies the unchanged visual presentation: dark satellite Earth, red atmosphere, pulsing pins, floating two-mode controls, right-hand list and left slide-out detail panel. The original styling is retained, with a small addition for event-location choices. The rejected folio redesign is archived in `.impeccable/archive/folio-version/` and is not the current direction.
 
 ## Run
 
@@ -12,9 +12,11 @@ npm run build
 npm run preview
 ```
 
-Select **1911–1945** or **1945–2021** using the original mode switch. The original place list now groups events by period and year. Pins open historical accounts; **khám phá** retains the original random selection action. Close details with × or Escape. Deep links use `#event=hoi-nghi-1930`.
+Select **1911–1945** or **1945–2021** using the original mode switch. The original place list now groups events by period and year. Pins open historical accounts. Close details with × or Escape. Deep links use `#event=hoi-nghi-1930`.
 
-The 36 sourced records live in `src/history.js`; `src/historicalPlaces.js` adapts them to the clone's existing place/photo contract. `src/App.jsx` retains the original interface and globe implementation. `src/style.css` is the original stylesheet. Source-page images replace travel photographs in the existing gallery slots, with the complete textbook linked from each account. The PDF in `docs/` is the source of truth. Modern country shapes only orient the reader; relationship arcs follow sourced event connections, not fictional travel routes.
+The 18 October cleanup removes the large hero text, top-left branding, summary counts, gesture instructions and random exploration button. Timeline controls remain. Era changes select the first event in that era and focus its primary marker. Only the focused marker’s country is highlighted; closing details clears the highlight. Events without verified locations have no selected marker or country. Multi-location events offer location choices inside the existing detail panel. Route lines are steady and only represent documented connections.
+
+The 36 sourced records live in `src/history.js`; `src/historicalPlaces.js` adapts them to the clone's existing place/photo contract. `src/App.jsx` retains the original interface and globe implementation. `src/style.css` retains the original styling with compact related-location controls. Source-page images replace travel photographs in the existing gallery slots, with the complete textbook linked from each account. The PDF in `docs/` is the source of truth. Modern country shapes only orient the reader; relationship arcs follow sourced event connections, not fictional travel routes.
 
 Both modes share six chronological learning periods from the supplied 2021 textbook. Events without verified sites remain in the list with no invented pin. Shared locations use one selectable pin; individual events remain available from the list. The original mobile behavior, including hiding the right-hand list, remains intact.
 
