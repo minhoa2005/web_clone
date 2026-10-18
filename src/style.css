@@ -42,8 +42,9 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .hero-title__italic { color: var(--vermilion); font-style: italic; letter-spacing: -.065em; }
 @keyframes rise-in { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-in-center { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-.controls { position: absolute; z-index: 20; left: 50%; bottom: 52px; display: flex; align-items: center; gap: 14px; transform: translateX(-50%); animation: fade-in .8s .7s both; }
+.controls { position: absolute; z-index: 20; left: 50%; bottom: 52px; display: flex; align-items: center; gap: 14px; transform: translateX(-50%); animation: fade-in-center .8s .7s both; }
 .mode-toggle { display: flex; align-items: center; padding: 3px; border: 1px solid var(--hairline); border-radius: 999px; background: rgba(11,11,12,.5); backdrop-filter: blur(8px); }
 .mode-btn { padding: 8px 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; transition: color .3s, background .3s; }
 .mode-btn.is-active { background: var(--bone); color: var(--ink); }
