@@ -52,6 +52,12 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .shuffle-btn { padding: 11px 18px; border: 1px solid var(--hairline); border-radius: 999px; background: rgba(11,11,12,.5); backdrop-filter: blur(8px); color: var(--bone); cursor: pointer; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; transition: border-color .3s, color .3s; white-space: nowrap; }
 .shuffle-btn:hover { border-color: var(--vermilion); color: var(--vermilion); }
 .shuffle-btn span { display: inline-block; margin-right: 3px; font-size: 14px; }
+.guided-controls { position: absolute; z-index: 20; left: 50%; bottom: 104px; display: flex; align-items: center; gap: 4px; max-width: 94vw; padding: 4px 9px; transform: translateX(-50%); border: 1px solid var(--hairline); border-radius: 999px; background: rgba(11,11,12,.72); backdrop-filter: blur(8px); animation: fade-in-center .8s .8s both; }
+.guided-controls__button { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 auto; padding: 0; border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--bone); cursor: pointer; font-size: 16px; line-height: 1; transition: border-color .2s, color .2s, background .2s; }
+.guided-controls__button:hover:not(:disabled), .guided-controls__play { border-color: var(--hairline); color: var(--vermilion); }
+.guided-controls__button:disabled { color: rgba(236,231,222,.28); cursor: default; }
+.guided-controls__position { min-width: 65px; padding: 0 5px; color: var(--muted); font-size: 9px; letter-spacing: .12em; text-align: center; white-space: nowrap; }
+.guided-controls__error { position: absolute; bottom: calc(100% + 8px); left: 50%; width: max-content; max-width: 90vw; padding: 7px 11px; transform: translateX(-50%); border: 1px solid var(--hairline); border-radius: 8px; background: rgba(11,11,12,.92); color: var(--bone); font-size: 11px; letter-spacing: .02em; text-align: center; }
 .hint { position: absolute; z-index: 10; left: 50%; bottom: 22px; width: max-content; margin: 0; transform: translateX(-50%); color: var(--muted); font-size: 10px; letter-spacing: .3em; text-transform: uppercase; animation: fade-in .8s .8s both; }
 .hint span { padding: 0 3px; }
 .atlas--wishlist .hint { color: var(--vermilion); }
@@ -106,6 +112,9 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .place-panel__country { margin: 0 0 10px; color: var(--vermilion); font-size: 11px; letter-spacing: .3em; text-transform: uppercase; }
 .place-panel h2 { margin: 0 0 14px; font: italic 500 clamp(34px,4vw,48px)/1 var(--serif); }
 .place-panel__note { max-width: 34ch; margin: 0 0 28px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.place-panel__narration { max-width: 34ch; margin: 0 0 28px; padding: 12px 14px; border-left: 2px solid var(--vermilion); background: rgba(230,64,46,.07); color: var(--bone); font-size: 13px; line-height: 1.65; }
+.place-panel__narration p { margin: 0; }
+.place-panel__narration-label { margin-bottom: 6px !important; color: var(--vermilion); font-size: 9px; letter-spacing: .2em; text-transform: uppercase; }
 .place-panel__rule { width: 100%; height: 1px; background: var(--hairline); }
 .place-panel__coordinates { margin-top: 16px; color: var(--muted); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; }
 .place-panel__coordinates span { color: var(--vermilion); padding: 0 5px; }
