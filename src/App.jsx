@@ -3,7 +3,8 @@ import Globe from 'globe.gl';
 import { BufferGeometry, Float32BufferAttribute, LineBasicMaterial, LineSegments } from 'three';
 import { countryOutlinePositions } from './globeGeometry.js';
 import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation } from './historicalPlaces.js';
-import { readEventHash } from './history.js';
+import { EVENTS, readEventHash } from './history.js';
+import { getNarration } from './narration.js';
 import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?url';
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
@@ -28,6 +29,10 @@ function groupPlaces(places) {
 function photoUrl(photo) {
   if (!photo?.src) return '';
   return `${import.meta.env.BASE_URL}${photo.src}`;
+}
+
+function audioClipUrl(eventId) {
+  return `${import.meta.env.BASE_URL}audio/${eventId}.mp3`;
 }
 
 function Pin({ place, kind, onPick }) {
@@ -240,8 +245,8 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     controls.autoRotate = !selected;
     if (!location) { cameraTargetRef.current = null; wakeRef.current?.(200); return; }
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Explicit selection requests camera travel; initial loading respects reduced motion.
-    const duration = focusRevision > 0 ? 1500 : reducedMotion ? 0 : 900;
+    // Explicit selection requests camera travel; reduced motion skips the camera tween.
+    const duration = reducedMotion ? 0 : focusRevision > 0 ? 1500 : 900;
     const target = { lat: location.lat, lng: location.lng, altitude: 1.15 };
     cameraTargetRef.current = target;
     globeRef.current.pointOfView(target, duration);
@@ -259,9 +264,42 @@ export default function App() {
   const [selected, setSelected] = useState(initialPlace);
   const [focusedLocationId, setFocusedLocationId] = useState(() => eventLocation(initialPlace, new URLSearchParams(window.location.hash.slice(1)).get('location'))?.id || null);
   const [focusRevision, setFocusRevision] = useState(0);
+  const [tourStatus, setTourStatus] = useState('idle');
+  const [tourIndex, setTourIndex] = useState(-1);
+  const [tourError, setTourError] = useState('');
+  const tourStatusRef = useRef('idle');
+  const tourIndexRef = useRef(-1);
+  const tourTokenRef = useRef(0);
+  const tourTimerRef = useRef(null);
+  const tourPhaseRef = useRef('idle');
+  const tourLocationRef = useRef(null);
+  const audioRef = useRef(null);
+  const playStepRef = useRef(null);
   const location = eventLocation(selected, focusedLocationId);
   const list = LISTS[mode];
   const groupedPlaces = useMemo(() => groupPlaces(list), [list]);
+
+  const updateTourStatus = (next) => {
+    tourStatusRef.current = next;
+    setTourStatus(next);
+  };
+  const updateTourIndex = (next) => {
+    tourIndexRef.current = next;
+    setTourIndex(next);
+  };
+  const clearTourTimer = () => {
+    window.clearTimeout(tourTimerRef.current);
+    tourTimerRef.current = null;
+  };
+  const cancelAudio = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+  }, []);
 
   const choosePlace = useCallback((place, locationId) => {
     const focus = eventLocation(place, locationId);
@@ -274,20 +312,209 @@ export default function App() {
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${hash}`);
   }, []);
 
+  const playStep = useCallback((index, token, locationId = null) => {
+    if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
+    if (index >= EVENTS.length) {
+      tourPhaseRef.current = 'complete';
+      updateTourIndex(EVENTS.length - 1);
+      updateTourStatus('complete');
+      cancelAudio();
+      return;
+    }
+    const place = placeMap.get(EVENTS[index].id);
+    if (!place) return;
+    const focus = eventLocation(place, locationId);
+    updateTourIndex(index);
+    tourLocationRef.current = focus?.id || null;
+    setTourError('');
+    choosePlace(place, focus?.id || null);
+    tourPhaseRef.current = 'focus';
+
+    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const cameraDelay = focus ? (reducedMotion ? 100 : 1750) : 100;
+
+    tourTimerRef.current = window.setTimeout(() => {
+      if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
+
+      const audio = audioRef.current;
+      if (!audio) {
+        tourPhaseRef.current = 'idle';
+        updateTourStatus('idle');
+        setTourError('Không tìm thấy trình phát âm thanh.');
+        return;
+      }
+
+      tourPhaseRef.current = 'playing';
+
+      let settled = false;
+      const handleAudioError = (errorMsg) => {
+        if (token !== tourTokenRef.current || settled) return;
+        settled = true;
+        cancelAudio();
+        tourPhaseRef.current = 'idle';
+        updateTourStatus('idle');
+        setTourError(errorMsg || `Không tìm thấy tệp âm thanh (public/audio/${place.id}.mp3).`);
+      };
+
+      audio.onended = () => {
+        if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing' || settled) return;
+        settled = true;
+        audio.onended = null;
+        audio.onerror = null;
+        tourPhaseRef.current = 'gap';
+        tourTimerRef.current = window.setTimeout(() => {
+          if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
+          playStepRef.current?.(index + 1, token);
+        }, 700);
+      };
+
+      audio.onerror = () => {
+        handleAudioError(`Không tìm thấy tệp âm thanh (public/audio/${place.id}.mp3).`);
+      };
+
+      audio.src = audioClipUrl(place.id);
+      audio.currentTime = 0;
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
+          handleAudioError(error?.name === 'NotAllowedError'
+            ? 'Trình duyệt chặn tự động phát âm thanh.'
+            : `Không thể phát tệp âm thanh (public/audio/${place.id}.mp3).`);
+        });
+      }
+    }, cameraDelay);
+  }, [choosePlace, cancelAudio]);
+  playStepRef.current = playStep;
+
+  const stopTour = useCallback(() => {
+    tourTokenRef.current += 1;
+    clearTourTimer();
+    cancelAudio();
+    tourPhaseRef.current = 'idle';
+    tourLocationRef.current = null;
+    updateTourIndex(-1);
+    updateTourStatus('idle');
+    setTourError('');
+  }, [cancelAudio]);
+
+  const startTour = useCallback(() => {
+    const selectedIndex = EVENTS.findIndex((event) => event.id === selected?.id);
+    const startIndex = tourStatusRef.current === 'complete' ? 0 : Math.max(0, selectedIndex);
+    tourTokenRef.current += 1;
+    clearTourTimer();
+    cancelAudio();
+    setTourError('');
+    updateTourStatus('playing');
+    playStepRef.current?.(startIndex, tourTokenRef.current);
+  }, [selected, cancelAudio]);
+
+  const pauseTour = useCallback(() => {
+    if (tourStatusRef.current !== 'playing') return;
+    updateTourStatus('paused');
+    if (tourPhaseRef.current === 'playing') {
+      audioRef.current?.pause();
+    } else {
+      clearTourTimer();
+    }
+  }, []);
+
+  const resumeTour = useCallback(() => {
+    if (tourStatusRef.current !== 'paused') return;
+    const audio = audioRef.current;
+    if (tourPhaseRef.current === 'playing' && audio && audio.src && !audio.ended) {
+      updateTourStatus('playing');
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (tourStatusRef.current !== 'playing') return;
+          tourPhaseRef.current = 'idle';
+          updateTourStatus('idle');
+          setTourError('Không thể tiếp tục phát âm thanh: ' + (err.message || 'Lỗi phát tệp.'));
+        });
+      }
+      return;
+    }
+    const phase = tourPhaseRef.current;
+    const nextIndex = phase === 'gap' ? tourIndexRef.current + 1 : tourIndexRef.current;
+    tourTokenRef.current += 1;
+    clearTourTimer();
+    cancelAudio();
+    updateTourStatus('playing');
+    playStepRef.current?.(Math.max(0, nextIndex), tourTokenRef.current, tourLocationRef.current);
+  }, [cancelAudio]);
+
+  const moveTour = useCallback((offset) => {
+    const selectedIndex = EVENTS.findIndex((event) => event.id === selected?.id);
+    const currentIndex = tourIndexRef.current >= 0 ? tourIndexRef.current : Math.max(0, selectedIndex);
+    const nextIndex = Math.max(0, Math.min(EVENTS.length - 1, currentIndex + offset));
+    const place = placeMap.get(EVENTS[nextIndex].id);
+    const status = tourStatusRef.current;
+    if (status === 'playing' || status === 'paused') {
+      tourTokenRef.current += 1;
+      clearTourTimer();
+      cancelAudio();
+      setTourError('');
+      updateTourIndex(nextIndex);
+      updateTourStatus(status);
+      tourPhaseRef.current = 'focus';
+      tourLocationRef.current = eventLocation(place)?.id || null;
+      if (status === 'playing') playStepRef.current?.(nextIndex, tourTokenRef.current);
+      else choosePlace(place);
+      return;
+    }
+    if (status === 'complete') updateTourStatus('idle');
+    setTourError('');
+    updateTourIndex(-1);
+    choosePlace(place);
+  }, [choosePlace, selected, cancelAudio]);
+
+  const selectPlace = useCallback((place, locationId) => {
+    const eventIndex = EVENTS.findIndex((event) => event.id === place.id);
+    const status = tourStatusRef.current;
+    if (status === 'playing' && eventIndex >= 0) {
+      tourTokenRef.current += 1;
+      clearTourTimer();
+      cancelAudio();
+      setTourError('');
+      updateTourStatus('playing');
+      playStepRef.current?.(eventIndex, tourTokenRef.current, locationId);
+      return;
+    }
+    if (status === 'paused' && eventIndex >= 0) {
+      tourTokenRef.current += 1;
+      clearTourTimer();
+      cancelAudio();
+      setTourError('');
+      updateTourIndex(eventIndex);
+      tourLocationRef.current = eventLocation(place, locationId)?.id || null;
+      tourPhaseRef.current = 'focus';
+      choosePlace(place, locationId);
+      return;
+    }
+    if (status === 'complete') updateTourStatus('idle');
+    setTourError('');
+    updateTourIndex(-1);
+    choosePlace(place, locationId);
+  }, [choosePlace, cancelAudio]);
+
   const closePlace = useCallback(() => {
+    stopTour();
     setSelected(null);
     setFocusedLocationId(null);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  }, []);
+  }, [stopTour]);
 
   const changeMode = (nextMode) => {
-    choosePlace(LISTS[nextMode][0]);
+    selectPlace(LISTS[nextMode][0]);
   };
 
   useEffect(() => {
     const onKeyDown = (event) => { if (event.key === 'Escape') closePlace(); };
     const onHashChange = () => {
       const place = window.location.hash ? placeMap.get(readEventHash(window.location.hash).id) : null;
+      stopTour();
       setSelected(place || null);
       setFocusedLocationId(eventLocation(place, new URLSearchParams(window.location.hash.slice(1)).get('location'))?.id || null);
       setFocusRevision((value) => value + 1);
@@ -299,14 +526,41 @@ export default function App() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('hashchange', onHashChange);
     };
-  }, [closePlace]);
+  }, [closePlace, stopTour]);
+
+  useEffect(() => () => {
+    tourTokenRef.current += 1;
+    clearTourTimer();
+    cancelAudio();
+  }, [cancelAudio]);
 
   useEffect(() => { document.title = `${selected?.short || 'Lịch sử Đảng'} · Địa cầu lịch sử`; }, [selected]);
 
+  useEffect(() => {
+    if (!['playing', 'paused'].includes(tourStatus)) return;
+    const nav = document.querySelector('.places-nav');
+    if (!nav || window.getComputedStyle(nav).display === 'none') return;
+    const activeRow = nav.querySelector('[aria-current="location"]');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    activeRow?.scrollIntoView({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, [selected, tourStatus]);
+
+  const selectedPosition = EVENTS.findIndex((event) => event.id === selected?.id);
+  const tourPosition = tourIndex >= 0 ? tourIndex : selectedPosition;
+  const tourPositionLabel = tourStatus === 'complete'
+    ? `Hoàn tất · ${EVENTS.length}/${EVENTS.length}`
+    : tourPosition >= 0 ? `${tourPosition + 1} / ${EVENTS.length}` : `${EVENTS.length} sự kiện`;
+  const playLabel = tourStatus === 'playing' ? 'Tạm dừng thuyết minh'
+    : tourStatus === 'paused' ? 'Tiếp tục thuyết minh'
+      : tourStatus === 'complete' ? 'Phát lại từ đầu' : 'Phát thuyết minh';
+  const onPlayClick = tourStatus === 'playing' ? pauseTour
+    : tourStatus === 'paused' ? resumeTour : startTour;
+
   return (
     <main className={`atlas atlas--${mode}`}>
+      <audio ref={audioRef} preload="auto" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
-      <GlobeStage mode={mode} selected={selected} focusedLocationId={focusedLocationId} focusRevision={focusRevision} onPick={choosePlace} />
+      <GlobeStage mode={mode} selected={selected} focusedLocationId={focusedLocationId} focusRevision={focusRevision} onPick={selectPlace} />
 
       <header className="head">
         <p className="head__title">lịch sử <em>Đảng</em></p>
@@ -319,6 +573,15 @@ export default function App() {
         </div>
       </nav>
 
+      <div className="guided-controls" role="group" aria-label="Thuyết minh theo dòng thời gian">
+        <button type="button" className="guided-controls__button" aria-label="Sự kiện trước" title="Sự kiện trước" onClick={() => moveTour(-1)}>‹</button>
+        <button type="button" className="guided-controls__button guided-controls__play" aria-label={playLabel} title={playLabel} onClick={onPlayClick}>{tourStatus === 'playing' ? 'Ⅱ' : '▶'}</button>
+        <button type="button" className="guided-controls__button" aria-label="Dừng thuyết minh" title="Dừng thuyết minh" onClick={stopTour} disabled={tourStatus === 'idle' || tourStatus === 'complete'}>■</button>
+        <button type="button" className="guided-controls__button" aria-label="Sự kiện tiếp theo" title="Sự kiện tiếp theo" onClick={() => moveTour(1)}>›</button>
+        <span className="guided-controls__position" aria-live="polite">{tourPositionLabel}</span>
+        {tourError && <span className="guided-controls__error" role="alert">{tourError}</span>}
+      </div>
+
       <nav key={mode} className="places-nav" tabIndex="0" aria-label="Các sự kiện theo thời gian">
         {groupedPlaces.map(([region, countries]) => {
           const regionCount = [...countries.values()].reduce((total, places) => total + places.length, 0);
@@ -329,7 +592,7 @@ export default function App() {
               {places.map((place) => <button
                 className={`places-link${selected?.id === place.id ? ' is-active' : ''}`}
                 key={place.id}
-                onClick={() => choosePlace(place)}
+                onClick={() => selectPlace(place)}
                 aria-current={selected?.id === place.id ? 'location' : undefined}
               >
                 <span>{place.year}</span>
@@ -348,8 +611,12 @@ export default function App() {
           <p className="place-panel__note">{selected.note}</p>
           <p className="place-panel__note">{selected.context}</p>
           <p className="place-panel__note">{selected.significance}</p>
+          {['playing', 'paused'].includes(tourStatus) && tourIndex === selectedPosition && <section className="place-panel__narration" aria-label="Lời thuyết minh">
+            <p className="place-panel__narration-label">{tourStatus === 'paused' ? 'Đã tạm dừng' : 'Thuyết minh'}</p>
+            <p>{getNarration(selected.id)}</p>
+          </section>}
           {selected.annotation && <p className="place-panel__note">{selected.annotation}</p>}
-          {selected.places.length > 1 && <div className="event-locations" aria-label="Địa danh của sự kiện">{selected.places.map((id) => <button key={id} className={`places-link${location?.id === id ? ' is-active' : ''}`} aria-pressed={location?.id === id} onClick={() => choosePlace(selected, id)}>{eventLocation(selected, id).name}</button>)}</div>}
+          {selected.places.length > 1 && <div className="event-locations" aria-label="Địa danh của sự kiện">{selected.places.map((id) => <button key={id} className={`places-link${location?.id === id ? ' is-active' : ''}`} aria-pressed={location?.id === id} onClick={() => selectPlace(selected, id)}>{eventLocation(selected, id).name}</button>)}</div>}
           <p className="place-panel__note">{location ? `${location.name} · ${location.today}. ` : ''}Địa lý hiện đại chỉ để định hướng, không tái dựng biên giới lịch sử. Đường nối biểu thị quan hệ được chú thích.</p>
           <p className="place-panel__note"><a href={selected.external?.url || textbookUrl} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{selected.external ? selected.external.title : `Giáo trình Lịch sử Đảng Cộng sản Việt Nam, 2021 · tr. ${selected.pages.join(', ')}`}</a></p>
           <div className="place-photos" aria-label={`Trang tư liệu: ${selected.city}`}>
