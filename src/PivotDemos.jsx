@@ -10,6 +10,7 @@ import {
   LineSegments,
   Mesh,
   MeshBasicMaterial,
+  Plane,
   PlaneGeometry,
   SRGBColorSpace,
   TextureLoader,
@@ -42,7 +43,7 @@ const DEMOS = [
     index: '03',
     label: 'Nhanh',
     title: 'Một dòng tư liệu liên tục.',
-    description: 'Tăng tốc vòng carousel để trình chiếu nhanh; từng ảnh vẫn mờ và rõ theo góc nhìn.',
+    description: 'Tăng tốc vòng carousel; từng ảnh nối đuôi nhau và giữ rõ nét trong cung phía trước.',
     speed: 0.5,
     tag: 'FAST ORBIT · 0.50 RAD/S',
   },
@@ -50,30 +51,6 @@ const DEMOS = [
 
 const PHOTO_PAGES = ['98', '97', '96', '95', '82', '81', '79'];
 const TAU = Math.PI * 2;
-const IDLE_START_ANGLE = Math.PI * 110 / 180;
-const IDLE_ARC_SPAN = Math.PI * 140 / 180;
-const ENTER_MS = 1450;
-const BASE_REAR_OPACITY = 0.2;
-
-function clamp(value, min = 0, max = 1) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function smoothstep(edge0, edge1, value) {
-  const t = clamp((value - edge0) / (edge1 - edge0));
-  return t * t * (3 - 2 * t);
-}
-
-function easeInOutCubic(value) {
-  return value < 0.5
-    ? 4 * value * value * value
-    : 1 - Math.pow(-2 * value + 2, 3) / 2;
-}
-
-function idleAngleFor(index, count, startAngle = IDLE_START_ANGLE) {
-  const step = IDLE_ARC_SPAN / Math.max(1, count - 1);
-  return startAngle + index * step;
-}
 
 function setCardAngle(card, angle, radius) {
   card.userData.angle = angle;
@@ -95,6 +72,8 @@ function buildCarouselRig(scene, globe, width) {
   const imageGeometry = new PlaneGeometry(cardWidth, cardHeight);
   const backImageGeometry = imageGeometry.clone();
   const backUv = backImageGeometry.getAttribute('uv');
+  const clipPlane = new Plane(new Vector3(0, 0, 1), 0);
+  const rearClipPlane = clipPlane.clone().negate();
 
   for (let index = 0; index < backUv.count; index += 1) backUv.setX(index, 1 - backUv.getX(index));
   backUv.needsUpdate = true;
@@ -112,14 +91,17 @@ function buildCarouselRig(scene, globe, width) {
 
     const frameMaterial = new MeshBasicMaterial({
       color: '#151619', transparent: true, opacity: 0, depthTest: true, depthWrite: false,
+      clippingPlanes: [clipPlane],
     });
     const frontMaterial = new MeshBasicMaterial({
       map: texture, side: FrontSide, transparent: true, opacity: 0,
       depthTest: true, depthWrite: false, toneMapped: false,
+      clippingPlanes: [clipPlane],
     });
     const backMaterial = new MeshBasicMaterial({
       map: texture, side: FrontSide, transparent: true, opacity: 0,
       depthTest: true, depthWrite: false, toneMapped: false,
+      clippingPlanes: [clipPlane],
     });
     owned.push(frameMaterial, frontMaterial, backMaterial);
 
@@ -130,12 +112,24 @@ function buildCarouselRig(scene, globe, width) {
     front.position.z = imageOffset;
     back.position.z = -imageOffset;
     back.rotation.y = Math.PI;
-    card.add(frame, front, back);
+    const frontSegment = new Group();
+    frontSegment.add(frame, front, back);
+    const rearSegment = frontSegment.clone();
+    const rearMaterials = rearSegment.children.map((mesh) => {
+      mesh.material = mesh.material.clone();
+      mesh.material.clippingPlanes = [rearClipPlane];
+      return mesh.material;
+    });
+    owned.push(...rearMaterials);
+    card.add(frontSegment, rearSegment);
     card.userData = {
       index,
-      materials: [frameMaterial, frontMaterial, backMaterial],
-      meshes: [frame, front, back],
-      angle: idleAngleFor(index, PHOTO_PAGES.length),
+      materials: [frameMaterial, frontMaterial, backMaterial, ...rearMaterials],
+      frontSegment,
+      rearSegment,
+      angle: index * TAU / PHOTO_PAGES.length,
+      previouslyInFront: null,
+      passVisible: false,
     };
     setCardAngle(card, card.userData.angle, orbitRadius);
     cards.push(card);
@@ -153,78 +147,52 @@ function buildCarouselRig(scene, globe, width) {
     carousel,
     cards,
     owned,
-    idleStartAngle: IDLE_START_ANGLE,
+    clipPlane,
+    rearClipPlane,
+    halfCardWidth: frameGeometry.parameters.width / 2,
+    halfCardDepth: imageOffset,
     mode: 'idle',
-    transition: null,
+    presentationRequested: false,
     lastFrame: 0,
     earthGroup: null,
   };
 }
 
-function positionOpacity(card, rig, camera, mode, transitionProgress, settings) {
+function updateCardVisibility(card, rig, settings) {
   const angle = card.userData.angle + rig.carousel.rotation.y;
-  const radialX = Math.sin(angle);
-  const radialZ = Math.cos(angle);
-  const target = camera.userData.controlsTarget;
-  const viewX = camera.position.x - (target?.x || 0);
-  const viewZ = camera.position.z - (target?.z || 0);
-  const viewLength = Math.hypot(viewX, viewZ) || 1;
-  const facing = (radialX * viewX + radialZ * viewZ) / viewLength;
-  const frontWeight = smoothstep(0.52, 0.98, facing);
-  const rearOpacity = settings.rearOpacity;
-  const idleOpacity = rearOpacity * (1 - smoothstep(-0.04, 0.12, facing));
-  const presentationOpacity = rearOpacity + (settings.maxOpacity - rearOpacity) * frontWeight;
-
-  let opacity = idleOpacity;
-  if (mode === 'entering') opacity = idleOpacity + (presentationOpacity - idleOpacity) * transitionProgress;
-  if (mode === 'playing') opacity = presentationOpacity;
-  if (mode === 'exiting') opacity = presentationOpacity + (idleOpacity - presentationOpacity) * transitionProgress;
-  opacity = clamp(opacity);
+  const normal = rig.clipPlane.normal;
+  const radialDistance = Math.sin(angle) * normal.x + Math.cos(angle) * normal.z;
+  const tangentDistance = Math.cos(angle) * normal.x - Math.sin(angle) * normal.z;
+  const scale = rig.carousel.scale.x;
+  const centerDistance = rig.orbitRadius * radialDistance * scale;
+  const halfExtent = (rig.halfCardWidth * Math.abs(tangentDistance)
+    + rig.halfCardDepth * Math.abs(radialDistance)) * scale;
+  // Latch at the leading edge, and release only after the trailing edge clears.
+  // The shared clipping plane cuts individual fragments, including the frame.
+  const inFront = centerDistance + halfExtent > 0;
+  const inRear = centerDistance - halfExtent < 0;
+  if (inFront && card.userData.previouslyInFront === false) {
+    card.userData.passVisible = rig.presentationRequested;
+  }
+  if (!inFront) card.userData.passVisible = false;
+  card.userData.previouslyInFront = inFront;
 
   card.userData.materials.forEach((material, index) => {
-    material.opacity = index === 0 ? opacity * 0.78 : opacity;
+    material.opacity = index % 3 === 0 ? settings.maxOpacity * 0.78 : settings.maxOpacity;
   });
-  card.userData.meshes.forEach((mesh) => { mesh.visible = opacity > 0.004; });
+  card.userData.frontSegment.visible = card.userData.passVisible && inFront;
+  // Complementary clipping keeps stopped cards behind the globe, including
+  // partial cards at either boundary. The orbit itself never stops.
+  card.userData.rearSegment.visible = !rig.presentationRequested && inRear;
+  card.visible = card.userData.frontSegment.visible || card.userData.rearSegment.visible;
+  return card.userData.frontSegment.visible;
 }
 
-function worldCardAngles(rig) {
-  return rig.cards.map((card) => card.userData.angle + rig.carousel.rotation.y);
-}
-
-function startTransition(rig, kind, durationMs) {
-  const starts = worldCardAngles(rig);
-  rig.carousel.rotation.y = 0;
-  starts.forEach((angle, index) => setCardAngle(rig.cards[index], angle, rig.orbitRadius));
-
-  let targets;
-  let targetStart;
-  if (kind === 'entering') {
-    targetStart = starts[0];
-    const step = TAU / rig.cards.length;
-    targets = rig.cards.map((_, index) => targetStart + index * step);
-  } else {
-    targetStart = IDLE_START_ANGLE + Math.round((starts[0] - IDLE_START_ANGLE) / TAU) * TAU;
-    targets = rig.cards.map((_, index) => idleAngleFor(index, rig.cards.length, targetStart));
-    rig.idleStartAngle = targetStart;
-  }
-
+function startTransition(rig, kind) {
+  // Existing front passes keep their visibility. Changing this gate only
+  // affects subsequent arrivals, so opening and closing proceed card by card.
+  rig.presentationRequested = kind === 'entering';
   rig.mode = kind;
-  rig.transition = { kind, starts, targets, targetStart, elapsed: 0, duration: durationMs };
-}
-
-function completeTransition(rig) {
-  const transition = rig.transition;
-  if (!transition) return;
-  transition.targets.forEach((angle, index) => setCardAngle(rig.cards[index], angle, rig.orbitRadius));
-  if (transition.kind === 'entering') {
-    rig.mode = 'playing';
-    rig.carousel.rotation.y = 0;
-  } else {
-    rig.mode = 'idle';
-    rig.carousel.rotation.y = 0;
-    rig.idleStartAngle = transition.targetStart;
-  }
-  rig.transition = null;
 }
 
 export default function PivotDemos() {
@@ -236,11 +204,9 @@ export default function PivotDemos() {
   const [mode, setMode] = useState('idle');
   const [speed, setSpeed] = useState(DEMOS[1].speed);
   const [maxOpacity, setMaxOpacity] = useState(1);
-  const [rearOpacity, setRearOpacity] = useState(BASE_REAR_OPACITY);
-  const [returnSeconds, setReturnSeconds] = useState(1.6);
   const activeDemo = useMemo(() => DEMOS.find((item) => item.id === demoId) || DEMOS[1], [demoId]);
   const basePath = window.location.pathname.replace(/pivot-demos\/?$/, '') || '/';
-  settingsRef.current = { speed, maxOpacity, rearOpacity, returnSeconds };
+  settingsRef.current = { speed, maxOpacity };
 
   useEffect(() => {
     document.title = 'Carousel quỹ đạo · Địa cầu lịch sử';
@@ -266,6 +232,7 @@ export default function PivotDemos() {
       .height(host.clientHeight);
 
     globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    globe.renderer().localClippingEnabled = true;
     const controls = globe.controls();
     controls.autoRotate = false;
     controls.enableRotate = true;
@@ -305,22 +272,22 @@ export default function PivotDemos() {
       lastEarthFrame = now;
       if (earthGroup) earthGroup.rotation.y += deltaSeconds * (TAU / 60 * 0.55);
 
-      const transition = rig.transition;
-      let transitionProgress = 1;
-      if (transition) {
-        transition.elapsed += deltaSeconds * 1000;
-        const linearProgress = transition.duration <= 0 ? 1 : clamp(transition.elapsed / transition.duration);
-        transitionProgress = easeInOutCubic(linearProgress);
-        transition.starts.forEach((start, index) => {
-          const angle = start + (transition.targets[index] - start) * transitionProgress;
-          setCardAngle(rig.cards[index], angle, rig.orbitRadius);
-        });
-        if (linearProgress >= 1) completeTransition(rig);
-      } else if (rig.mode === 'playing') {
-        rig.carousel.rotation.y += deltaSeconds * settingsRef.current.speed;
-      }
+      const settings = settingsRef.current;
+      rig.carousel.rotation.y += deltaSeconds * settings.speed;
 
-      rig.cards.forEach((card) => positionOpacity(card, rig, controls.object, rig.mode, transition ? transitionProgress : 0, settingsRef.current));
+      const normal = rig.clipPlane.normal;
+      const viewX = controls.object.position.x - controls.target.x;
+      const viewZ = controls.object.position.z - controls.target.z;
+      // Keep the cut aligned with the viewing direction, independently of orbit.
+      if (Math.hypot(viewX, viewZ) > 0.0001) normal.set(viewX, 0, viewZ).normalize();
+      rig.rearClipPlane.copy(rig.clipPlane).negate();
+
+      let hasRevealedCard = false;
+      rig.cards.forEach((card) => {
+        if (updateCardVisibility(card, rig, settings)) hasRevealedCard = true;
+      });
+      if (rig.mode === 'entering' && hasRevealedCard) rig.mode = 'playing';
+      if (rig.mode === 'exiting' && !rig.cards.some((card) => card.userData.passVisible)) rig.mode = 'idle';
       if (modeRef.current !== rig.mode) {
         modeRef.current = rig.mode;
         setMode(rig.mode);
@@ -361,9 +328,9 @@ export default function PivotDemos() {
     const rig = rigRef.current;
     if (!rig) return;
     if (rig.mode === 'idle' || rig.mode === 'exiting') {
-      startTransition(rig, 'entering', ENTER_MS);
+      startTransition(rig, 'entering');
     } else {
-      startTransition(rig, 'exiting', settingsRef.current.returnSeconds * 1000);
+      startTransition(rig, 'exiting');
     }
     modeRef.current = rig.mode;
     setMode(rig.mode);
@@ -376,10 +343,10 @@ export default function PivotDemos() {
 
   const isActive = mode === 'entering' || mode === 'playing';
   const modeText = {
-    idle: 'GLOBE MODE · MẶT TRƯỚC TRỐNG',
-    entering: 'ĐANG MỞ VÒNG TRÌNH CHIẾU',
+    idle: 'GLOBE MODE · ẢNH QUAY PHÍA SAU',
+    entering: 'ĐANG CHỜ ẢNH KẾ TIẾP ĐI VÀO',
     playing: 'PRESENTATION · ORBIT LIÊN TỤC',
-    exiting: 'CAROUSEL ĐANG THU HỒI',
+    exiting: 'ẢNH ĐANG CHUYỂN VỀ PHÍA SAU',
   }[mode];
 
   return (
@@ -396,7 +363,7 @@ export default function PivotDemos() {
       <section className="pivot-intro">
         <p className="pivot-kicker"><span /> CAROUSEL 3D · ORBIT AROUND THE GLOBE</p>
         <h1>Tư liệu<br /><em>trong quỹ đạo.</em></h1>
-        <p className="pivot-intro__summary">Một vòng ảnh 3D ôm quanh địa cầu. Bắt đầu trình chiếu để mở vòng quay liên tục; kết thúc để toàn bộ ảnh thu về phía sau.</p>
+        <p className="pivot-intro__summary">Một vòng ảnh 3D luôn chuyển động. Bật trình chiếu để ảnh lần lượt đi vào cung trước; kết thúc để ảnh tiếp tục quay và hiển thị phía sau địa cầu.</p>
       </section>
 
       <section className="pivot-stage" aria-label="Carousel ảnh 3D quanh địa cầu">
@@ -406,7 +373,7 @@ export default function PivotDemos() {
           <span className={`pivot-stage__depth-dot${isActive ? ' is-front' : ''}`} />
           {modeText}
         </div>
-        <p className="pivot-stage__axis-label" aria-hidden="true">ẢNH MẶT SAU · GƯƠNG · DEPTH OCCLUSION</p>
+        <p className="pivot-stage__axis-label" aria-hidden="true">RANH GIỚI CẮT · {isActive ? 'CUNG PHÍA TRƯỚC' : 'CUNG PHÍA SAU'}</p>
       </section>
 
       <section className="pivot-console" aria-label="Điều khiển carousel 3D">
@@ -432,7 +399,7 @@ export default function PivotDemos() {
         </div>
 
         <div className="pivot-console__actions">
-          <button className="pivot-action pivot-action--primary" onClick={togglePresentation} aria-label={mode === 'idle' ? 'Bắt đầu trình chiếu carousel liên tục' : mode === 'exiting' ? 'Mở lại carousel trình chiếu' : 'Kết thúc trình chiếu và thu hồi carousel'}>
+          <button className="pivot-action pivot-action--primary" onClick={togglePresentation} aria-label={mode === 'idle' ? 'Bắt đầu trình chiếu carousel liên tục' : mode === 'exiting' ? 'Mở lại carousel trình chiếu' : 'Kết thúc trình chiếu và chuyển ảnh về phía sau địa cầu'}>
             <span className="pivot-action__icon">{mode === 'idle' ? '↻' : mode === 'exiting' ? '↷' : '↶'}</span>
             {mode === 'idle' ? 'Bắt đầu trình chiếu' : mode === 'exiting' ? 'Mở lại trình chiếu' : 'Kết thúc trình chiếu'}
           </button>
@@ -445,12 +412,8 @@ export default function PivotDemos() {
             <input type="range" min="0.12" max="0.72" step="0.01" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
           </label>
           <label className="pivot-range">
-            <span><span>Độ rõ phía trước</span><output>{Math.round(maxOpacity * 100)}%</output></span>
+            <span><span>Độ rõ của ảnh</span><output>{Math.round(maxOpacity * 100)}%</output></span>
             <input type="range" min="0.55" max="1" step="0.05" value={maxOpacity} onChange={(event) => setMaxOpacity(Number(event.target.value))} />
-          </label>
-          <label className="pivot-range">
-            <span><span>Thời gian thu hồi</span><output>{returnSeconds.toFixed(1)} giây</output></span>
-            <input type="range" min="0.8" max="3" step="0.1" value={returnSeconds} onChange={(event) => setReturnSeconds(Number(event.target.value))} />
           </label>
         </div>
       </section>
@@ -458,7 +421,7 @@ export default function PivotDemos() {
       <footer className="pivot-footer">
         <span><b>01</b> Tâm chung với địa cầu</span>
         <span><b>02</b> Orbit liên tục · không dừng</span>
-        <span><b>03</b> Fade theo góc nhìn 3D</span>
+        <span><b>03</b> Qua ranh giới · ẩn ngay từng phần</span>
       </footer>
     </main>
   );
