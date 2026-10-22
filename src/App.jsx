@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Globe from 'globe.gl';
-import { BufferGeometry, Float32BufferAttribute, LineBasicMaterial, LineSegments } from 'three';
+import { BufferGeometry, Color, Float32BufferAttribute, LineBasicMaterial, LineSegments, Mesh, MeshPhongMaterial, SphereGeometry, TextureLoader } from 'three';
 import { countryOutlinePositions } from './globeGeometry.js';
 import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation } from './historicalPlaces.js';
 import { EVENTS, readEventHash } from './history.js';
@@ -78,15 +78,34 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     let pauseFrame;
     let renderUntil = 0;
     let dragging = false;
+    let clouds;
+    let cloudsFrame;
+    let specularMap;
+    const reducedMotionPref = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Cloud layer spins only while the globe renders, so idle-pause also parks it.
+    const stopCloudSpin = () => {
+      window.cancelAnimationFrame(cloudsFrame);
+      cloudsFrame = undefined;
+    };
+    const spinClouds = () => {
+      if (disposed || !clouds) { cloudsFrame = undefined; return; }
+      cloudsFrame = window.requestAnimationFrame(spinClouds);
+      if (!reducedMotionPref.matches) clouds.rotation.y -= 0.006 * Math.PI / 180;
+    };
+    const startCloudSpin = () => {
+      if (clouds && cloudsFrame === undefined && !reducedMotionPref.matches) spinClouds();
+    };
 
     const globe = Globe({ rendererConfig: { antialias: false, powerPreference: 'high-performance' } })(host)
       .enablePointerInteraction(false)
       .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl(`${import.meta.env.BASE_URL}assets/earth-dark.jpg`)
+      .backgroundImageUrl(`${import.meta.env.BASE_URL}assets/night-sky.png`)
+      .globeImageUrl(`${import.meta.env.BASE_URL}assets/earth-blue-marble.jpg`)
       .bumpImageUrl(`${import.meta.env.BASE_URL}assets/earth-topology.png`)
       .showAtmosphere(true)
-      .atmosphereColor('#e6402e')
-      .atmosphereAltitude(0.13)
+      .atmosphereColor('#4d9fff')
+      .atmosphereAltitude(0.15)
       .htmlLat('lat')
       .htmlLng('lng')
       .htmlAltitude(0.06)
@@ -117,9 +136,33 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     controls.maxDistance = 480;
     globe.pointOfView({ lat: 30, lng: -150, altitude: 2.3 }, 0);
 
+    // Glossy ocean: the water mask drives specular highlights over the blue marble.
+    new TextureLoader().load(`${import.meta.env.BASE_URL}assets/earth-water.jpg`, (map) => {
+      if (disposed) { map.dispose(); return; }
+      specularMap = map;
+      const material = globe.globeMaterial();
+      material.specularMap = map;
+      material.specular = new Color(0x4c6f8a);
+      material.shininess = 14;
+      material.needsUpdate = true;
+    }, undefined, () => {});
+
+    // Translucent cloud shell, slightly above the surface; parked with the globe when idle.
+    new TextureLoader().load(`${import.meta.env.BASE_URL}assets/earth-clouds.png`, (map) => {
+      if (disposed) { map.dispose(); return; }
+      clouds = new Mesh(
+        new SphereGeometry(globe.getGlobeRadius() * 1.004, 60, 60),
+        new MeshPhongMaterial({ map, transparent: true, opacity: 0.55, depthWrite: false }),
+      );
+      globe.scene().add(clouds);
+      // Resume through wake so the idle-pause timer still parks the new layer.
+      wake(1200);
+    }, undefined, () => {});
+
     const wake = (duration = 200) => {
       if (disposed || document.hidden) return;
       globe.resumeAnimation();
+      startCloudSpin();
       window.clearTimeout(idleTimer);
       window.cancelAnimationFrame(pauseFrame);
       renderUntil = Math.max(renderUntil, performance.now() + duration);
@@ -135,7 +178,10 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
         // Camera tweens run after rendering; allow its completed pose to be presented.
         pauseFrame = window.requestAnimationFrame(() => {
           pauseFrame = window.requestAnimationFrame(() => {
-            if (!disposed && !dragging && !controls.autoRotate && !cameraTargetRef.current) globe.pauseAnimation();
+            if (!disposed && !dragging && !controls.autoRotate && !cameraTargetRef.current) {
+              globe.pauseAnimation();
+              stopCloudSpin();
+            }
           });
         });
       }, Math.max(0, renderUntil - performance.now()));
@@ -153,8 +199,10 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     const wheel = () => { controls.autoRotate = false; cameraTargetRef.current = null; wake(1000); };
     const visibility = () => {
       dragging = false;
-      if (document.hidden) globe.pauseAnimation();
-      else wake(1000);
+      if (document.hidden) {
+        globe.pauseAnimation();
+        stopCloudSpin();
+      } else wake(1000);
     };
     host.addEventListener('pointerdown', pauseRotation, { capture: true, passive: true });
     host.addEventListener('wheel', wheel, { capture: true, passive: true });
@@ -185,7 +233,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
         countryFeatures = geo.features || [];
         const geometry = new BufferGeometry();
         geometry.setAttribute('position', new Float32BufferAttribute(countryOutlinePositions(countryFeatures, globe.getGlobeRadius() * 1.0051), 3));
-        outlines = new LineSegments(geometry, new LineBasicMaterial({ color: '#ece7de', opacity: .05, transparent: true, depthWrite: false }));
+        outlines = new LineSegments(geometry, new LineBasicMaterial({ color: '#ece7de', opacity: .15, transparent: true, depthWrite: false }));
         globe.scene().add(outlines);
         updateHighlights(countriesRef.current, highlightDurationRef.current);
       })
@@ -204,8 +252,15 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
       window.clearTimeout(highlightTimer);
       window.clearTimeout(idleTimer);
       window.cancelAnimationFrame(pauseFrame);
+      stopCloudSpin();
       wakeRef.current = null;
       highlightRef.current = null;
+      if (clouds) {
+        globe.scene().remove(clouds);
+        clouds.geometry.dispose();
+        clouds.material.dispose();
+      }
+      specularMap?.dispose();
       if (outlines) {
         globe.scene().remove(outlines);
         outlines.geometry.dispose();

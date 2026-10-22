@@ -15,7 +15,7 @@ The user's 16 October correction requires the original clone's appearance and in
 
 ## Colors
 
-Retain the clone's black ground, bone lettering and red globe/pin emphasis. No paper, olive or replacement palette.
+Retain the clone's black ground, bone lettering and red pin/line emphasis; the globe itself now renders in natural planetary color with a light-blue atmosphere. No paper, olive or replacement palette.
 
 ## Typography
 
@@ -27,7 +27,7 @@ Keep the full-screen globe, top identity and counts, bottom floating mode switch
 
 ## Elevation & Depth
 
-Keep the original satellite textures, atmosphere, translucent controls and panel, grain and existing motion.
+Render the globe as a natural-color planet: NASA Blue Marble surface, ETOPO1 bump relief, a water-mask specular sheen on the oceans, a translucent slow-spinning cloud shell, a light-blue atmosphere and a star-field backdrop. Raise the shared country-outline lines enough to read over the brighter surface. Keep vermilion for pins, connection lines, highlights and UI accents, and keep the existing translucent controls, panel, grain and motion. The cloud shell parks with the globe's idle-pause cycle so background rendering stays paused.
 
 ## Shapes
 
