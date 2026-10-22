@@ -564,6 +564,7 @@ export default function App() {
 
       <header className="head">
         <p className="head__title">lịch sử <em>Đảng</em></p>
+        <a className="head__demo-link" href={`${import.meta.env.BASE_URL}pivot-demos`}>PIVOT DEMOS <span>↗</span></a>
       </header>
 
       <nav className="controls" aria-label="Điều khiển địa cầu">
