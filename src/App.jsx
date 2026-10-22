@@ -9,6 +9,8 @@ import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?u
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
 const placeMap = new Map([...PLACES, ...WISHLIST].map((place) => [place.id, place]));
+const NARRATION_REVEAL_RATIO = 0.7;
+const NARRATION_SYNC_INTERVAL = 80;
 
 function groupPlaces(places) {
   const regions = new Map();
@@ -33,6 +35,14 @@ function photoUrl(photo) {
 
 function audioClipUrl(eventId) {
   return `${import.meta.env.BASE_URL}audio/${eventId}.mp3`;
+}
+
+function narrationSegments(text) {
+  return text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((segment) => segment.trim()).filter(Boolean) || [];
+}
+
+function narrationWeight(segment) {
+  return segment.length + ((segment.match(/[,;:]/g) || []).length * 8);
 }
 
 function Pin({ place, kind, onPick }) {
@@ -275,6 +285,9 @@ export default function App() {
   const tourLocationRef = useRef(null);
   const audioRef = useRef(null);
   const playStepRef = useRef(null);
+  const [narrationText, setNarrationText] = useState('');
+  const narrationTimingRef = useRef([]);
+  const narrationSyncRef = useRef(null);
   const location = eventLocation(selected, focusedLocationId);
   const list = LISTS[mode];
   const groupedPlaces = useMemo(() => groupPlaces(list), [list]);
@@ -291,15 +304,55 @@ export default function App() {
     window.clearTimeout(tourTimerRef.current);
     tourTimerRef.current = null;
   };
+  const clearNarrationSync = useCallback(() => {
+    window.clearInterval(narrationSyncRef.current);
+    narrationSyncRef.current = null;
+  }, []);
+  const syncNarration = useCallback((audio) => {
+    const timing = narrationTimingRef.current;
+    const duration = audio?.duration;
+    if (!timing.length || !Number.isFinite(duration) || duration <= 0) return;
+
+    const currentTime = Math.max(0, Math.min(audio.currentTime, duration));
+    const totalWeight = timing.reduce((total, item) => total + item.weight, 0);
+    let elapsed = 0;
+    let active = timing[timing.length - 1];
+    let activeProgress = 1;
+
+    for (let index = 0; index < timing.length; index += 1) {
+      const item = timing[index];
+      const segmentDuration = duration * item.weight / totalWeight;
+      const segmentEnd = elapsed + segmentDuration;
+      if (currentTime < segmentEnd || index === timing.length - 1) {
+        active = item;
+        activeProgress = segmentDuration > 0 ? Math.max(0, Math.min(1, (currentTime - elapsed) / segmentDuration)) : 1;
+        break;
+      }
+      elapsed = segmentEnd;
+    }
+
+    const revealProgress = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 1
+      : Math.min(1, activeProgress / NARRATION_REVEAL_RATIO);
+    const visibleLength = Math.max(1, Math.ceil(active.text.length * revealProgress));
+    const nextText = active.text.slice(0, visibleLength);
+    setNarrationText((previous) => previous === nextText ? previous : nextText);
+  }, []);
+  const startNarrationSync = useCallback((audio) => {
+    clearNarrationSync();
+    syncNarration(audio);
+    narrationSyncRef.current = window.setInterval(() => syncNarration(audio), NARRATION_SYNC_INTERVAL);
+  }, [clearNarrationSync, syncNarration]);
   const cancelAudio = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    clearNarrationSync();
     audio.onended = null;
     audio.onerror = null;
     audio.pause();
     audio.removeAttribute('src');
     audio.load();
-  }, []);
+  }, [clearNarrationSync]);
 
   const choosePlace = useCallback((place, locationId) => {
     const focus = eventLocation(place, locationId);
@@ -359,6 +412,7 @@ export default function App() {
       audio.onended = () => {
         if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing' || settled) return;
         settled = true;
+        clearNarrationSync();
         audio.onended = null;
         audio.onerror = null;
         tourPhaseRef.current = 'gap';
@@ -374,6 +428,7 @@ export default function App() {
 
       audio.src = audioClipUrl(place.id);
       audio.currentTime = 0;
+      startNarrationSync(audio);
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -385,7 +440,7 @@ export default function App() {
         });
       }
     }, cameraDelay);
-  }, [choosePlace, cancelAudio]);
+  }, [choosePlace, cancelAudio, clearNarrationSync, startNarrationSync]);
   playStepRef.current = playStep;
 
   const stopTour = useCallback(() => {
@@ -415,16 +470,18 @@ export default function App() {
     updateTourStatus('paused');
     if (tourPhaseRef.current === 'playing') {
       audioRef.current?.pause();
+      clearNarrationSync();
     } else {
       clearTourTimer();
     }
-  }, []);
+  }, [clearNarrationSync]);
 
   const resumeTour = useCallback(() => {
     if (tourStatusRef.current !== 'paused') return;
     const audio = audioRef.current;
     if (tourPhaseRef.current === 'playing' && audio && audio.src && !audio.ended) {
       updateTourStatus('playing');
+      startNarrationSync(audio);
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
@@ -443,7 +500,22 @@ export default function App() {
     cancelAudio();
     updateTourStatus('playing');
     playStepRef.current?.(Math.max(0, nextIndex), tourTokenRef.current, tourLocationRef.current);
-  }, [cancelAudio]);
+  }, [cancelAudio, startNarrationSync]);
+
+  useEffect(() => {
+    const source = tourIndex >= 0 ? getNarration(EVENTS[tourIndex]?.id) : '';
+    narrationTimingRef.current = narrationSegments(source).map((text) => ({ text, weight: narrationWeight(text) }));
+    setNarrationText('');
+  }, [tourIndex]);
+
+  useEffect(() => {
+    if (!['playing', 'paused'].includes(tourStatus)) {
+      clearNarrationSync();
+      setNarrationText('');
+    }
+  }, [tourStatus, clearNarrationSync]);
+
+  useEffect(() => () => clearNarrationSync(), [clearNarrationSync]);
 
   const moveTour = useCallback((offset) => {
     const selectedIndex = EVENTS.findIndex((event) => event.id === selected?.id);
@@ -582,6 +654,12 @@ export default function App() {
         {tourError && <span className="guided-controls__error" role="alert">{tourError}</span>}
       </div>
 
+      {narrationText && ['playing', 'paused'].includes(tourStatus) && <section className="narration-caption" aria-label="Lời thuyết minh">
+        <p className="narration-caption__label">{tourStatus === 'paused' ? 'Đã tạm dừng' : 'Thuyết minh'}</p>
+        <p className="narration-caption__text" aria-hidden="true">{narrationText}<span className="narration-caption__cursor" /></p>
+        <span className="sr-only" aria-live="polite">{getNarration(EVENTS[tourIndex]?.id)}</span>
+      </section>}
+
       <nav key={mode} className="places-nav" tabIndex="0" aria-label="Các sự kiện theo thời gian">
         {groupedPlaces.map(([region, countries]) => {
           const regionCount = [...countries.values()].reduce((total, places) => total + places.length, 0);
@@ -611,10 +689,6 @@ export default function App() {
           <p className="place-panel__note">{selected.note}</p>
           <p className="place-panel__note">{selected.context}</p>
           <p className="place-panel__note">{selected.significance}</p>
-          {['playing', 'paused'].includes(tourStatus) && tourIndex === selectedPosition && <section className="place-panel__narration" aria-label="Lời thuyết minh">
-            <p className="place-panel__narration-label">{tourStatus === 'paused' ? 'Đã tạm dừng' : 'Thuyết minh'}</p>
-            <p>{getNarration(selected.id)}</p>
-          </section>}
           {selected.annotation && <p className="place-panel__note">{selected.annotation}</p>}
           {selected.places.length > 1 && <div className="event-locations" aria-label="Địa danh của sự kiện">{selected.places.map((id) => <button key={id} className={`places-link${location?.id === id ? ' is-active' : ''}`} aria-pressed={location?.id === id} onClick={() => selectPlace(selected, id)}>{eventLocation(selected, id).name}</button>)}</div>}
           <p className="place-panel__note">{location ? `${location.name} · ${location.today}. ` : ''}Địa lý hiện đại chỉ để định hướng, không tái dựng biên giới lịch sử. Đường nối biểu thị quan hệ được chú thích.</p>
