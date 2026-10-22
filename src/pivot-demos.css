@@ -74,7 +74,7 @@
 .pivot-action--primary:hover { background: #c93324; }
 .pivot-action__icon { font: 18px/1 Arial,sans-serif; }
 .pivot-console__motion { margin: 0; color: var(--pivot-muted); font-size: 8px; letter-spacing: .19em; }
-.pivot-console__sliders { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: clamp(20px,4vw,56px); padding-top: 15px; border-top: 1px solid var(--pivot-line); }
+.pivot-console__sliders { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: clamp(20px,4vw,56px); padding-top: 15px; border-top: 1px solid var(--pivot-line); }
 .pivot-range { display: grid; gap: 8px; min-width: 0; }
 .pivot-range > span { display: flex; justify-content: space-between; gap: 10px; color: var(--pivot-muted); font-size: 9px; letter-spacing: .04em; }
 .pivot-range output { color: var(--pivot-bone); font-variant-numeric: tabular-nums; white-space: nowrap; }
