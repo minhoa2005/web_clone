@@ -57,6 +57,9 @@ function Pin({ place, kind, onPick }) {
   element.title = `${place.city} · ${place.country}`;
   element.dataset.locationId = place.locationId;
   element.setAttribute('aria-pressed', String(place.focused));
+  // Keyboard users reach every event through the chronology instead of duplicate,
+  // sometimes off-screen globe markers.
+  element.tabIndex = -1;
   element.innerHTML = '<span class="pin__dot"></span><span class="pin__pulse"></span><span class="pin__label"></span>';
   element.querySelector('.pin__label').textContent = place.city;
   element.addEventListener('click', (event) => {
@@ -330,6 +333,10 @@ export default function App() {
   const experienceWatchdogRef = useRef(null);
   const focusRevisionRef = useRef(0);
   const evidenceDockRef = useRef(null);
+  const panelRef = useRef(null);
+  const triggerRef = useRef(null);
+  const focusPanelRef = useRef(false);
+  const selectedIdRef = useRef(null);
   const tourStatusRef = useRef('idle');
   const tourIndexRef = useRef(-1);
   const tourTokenRef = useRef(0);
@@ -425,6 +432,9 @@ export default function App() {
 
   const choosePlace = useCallback((place, locationId) => {
     const focus = eventLocation(place, locationId);
+    const trigger = document.activeElement;
+    if (trigger instanceof HTMLElement && !trigger.closest('.place-panel')) triggerRef.current = trigger;
+    focusPanelRef.current = true;
     const revision = nextFocusRevision();
     const reducedMotion = prefersReducedMotion();
     const hasEvidence = Boolean(place.photos?.length);
@@ -673,6 +683,9 @@ export default function App() {
   }, [choosePlace, cancelAudio]);
 
   const closePlace = useCallback(() => {
+    const returnTo = triggerRef.current;
+    const closedId = selectedIdRef.current;
+    triggerRef.current = null;
     stopTour();
     clearExperienceWatchdog();
     setPromotionCancelled(true);
@@ -681,6 +694,12 @@ export default function App() {
     setFocusedLocationId(null);
     setFocusReadyRevision(-1);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    window.setTimeout(() => {
+      if (returnTo?.isConnected) { returnTo.focus({ preventScroll: true }); return; }
+      const row = closedId ? document.querySelector(`.places-nav .places-link[data-event-id="${closedId}"]`) : null;
+      const fallback = row || document.querySelector('.mode-btn.is-active') || document.querySelector('.guided-controls__play');
+      fallback?.focus?.({ preventScroll: true });
+    }, 0);
   }, [clearExperienceWatchdog, stopTour]);
 
   const openReadingNow = useCallback(() => {
@@ -760,6 +779,17 @@ export default function App() {
   }, [clearExperienceWatchdog]);
   const transitionActive = Boolean(selected) && experience.eventId === selected?.id && transitionIsRunning(experience);
 
+  useEffect(() => { selectedIdRef.current = selected?.id || null; }, [selected]);
+
+  // Move focus into the reading surface once per deliberate selection.
+  useEffect(() => {
+    if (!experience.ready || !selected || !focusPanelRef.current) return;
+    focusPanelRef.current = false;
+    const panel = panelRef.current;
+    if (!panel || panel.contains(document.activeElement)) return;
+    panel.focus({ preventScroll: true });
+  }, [experience.ready, selected]);
+
   return (
     <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`} data-phase={displayPhase(experience, tourStatus)}>
       <audio ref={audioRef} preload="auto" aria-hidden="true" />
@@ -808,9 +838,9 @@ export default function App() {
       </div>}
 
       <nav className="controls" aria-label="Điều khiển địa cầu">
-        <div className="mode-toggle" role="tablist" aria-label="Giai đoạn lịch sử">
-          <button className={`mode-btn${mode === 'visited' ? ' is-active' : ''}`} role="tab" aria-selected={mode === 'visited'} onClick={() => changeMode('visited')}>1911–1945</button>
-          <button className={`mode-btn${mode === 'wishlist' ? ' is-active' : ''}`} role="tab" aria-selected={mode === 'wishlist'} onClick={() => changeMode('wishlist')}>1945–2021</button>
+        <div className="mode-toggle" role="group" aria-label="Giai đoạn lịch sử">
+          <button className={`mode-btn${mode === 'visited' ? ' is-active' : ''}`} aria-pressed={mode === 'visited'} onClick={() => changeMode('visited')}>1911–1945</button>
+          <button className={`mode-btn${mode === 'wishlist' ? ' is-active' : ''}`} aria-pressed={mode === 'wishlist'} onClick={() => changeMode('wishlist')}>1945–2021</button>
         </div>
       </nav>
 
@@ -839,6 +869,7 @@ export default function App() {
               {places.map((place) => <button
                 className={`places-link${selected?.id === place.id ? ' is-active' : ''}`}
                 key={place.id}
+                data-event-id={place.id}
                 onClick={() => selectPlace(place)}
                 aria-current={selected?.id === place.id ? 'location' : undefined}
               >
@@ -850,12 +881,20 @@ export default function App() {
         })}
       </nav>
 
-      <aside className={`place-panel${selected && experience.ready ? ' place-panel--open' : ''}`} aria-hidden={!selected || !experience.ready}>
+      <aside
+        className={`place-panel${selected && experience.ready ? ' place-panel--open' : ''}`}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="place-panel-title"
+        tabIndex={-1}
+        aria-hidden={!selected || !experience.ready}
+      >
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
         {selected && <>
           {currentChapter && <p className="place-panel__chapter">{currentChapter.label} · {currentChapter.range}</p>}
           <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
-          <h2>{selected.city}</h2>
+          <h2 id="place-panel-title">{selected.city}</h2>
           {showEvidence && <div className="place-panel__evidence">
             <EvidenceCard event={selected} evidence={evidence} fullPageUrl={evidenceUrl} variant="inline" />
           </div>}

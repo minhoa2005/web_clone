@@ -22,6 +22,8 @@ The 18 October cleanup removes the large hero text, top-left branding, summary c
 
 The 36 sourced records live in `src/history.js`; `src/historicalPlaces.js` adapts them to the clone's existing place/photo contract. `src/App.jsx` retains the original interface and globe implementation. `src/style.css` retains the original styling with compact related-location controls. Source-page images replace travel photographs in the existing gallery slots, with the complete textbook linked from each account. The PDF in `docs/` is the source of truth. Modern country shapes only orient the reader; relationship arcs follow sourced event connections, not fictional travel routes.
 
+Keyboard and assistive-technology paths: globe pins keep their 14 px dot with a 44 px target but stay out of the tab order, so the chronology is the single keyboard route to every event; the two era controls are ordinary pressed buttons; the detail panel is a labelled dialog that takes focus when opened and returns focus to the triggering row on close or Escape; transport and close actions are 44 px; chronology text is 11 px at the warm-grey contrast it needs to be readable. The layout holds at 200% zoom.
+
 Both modes share six chronological learning periods from the supplied 2021 textbook. Events without verified sites remain in the list with no invented pin. Shared locations use one selectable pin; individual events remain available from the list. The original mobile behavior, including hiding the right-hand list, remains intact.
 
 `targets/field-atlas/` preserves original clone and Pingfusi history. No new hosting or Pingfusi review is claimed. Earlier performance measurements describe the rejected version, not this restored implementation.
