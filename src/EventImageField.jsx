@@ -1,8 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MOTION, prefersReducedMotion } from './motion.js';
 
-const MAX_DESKTOP_ITEMS = 24;
-const MAX_MOBILE_ITEMS = 10;
+const MAX_DESKTOP_ITEMS = 14;
+const MAX_MOBILE_ITEMS = 7;
 const IMAGE_ASPECTS = [0.78, 1.12, 0.92, 1.36, 0.86, 1.18, 0.72, 1.24];
 function photoUrl(photo) {
   return photo?.src ? `${import.meta.env.BASE_URL}${photo.src}` : '';
@@ -220,7 +220,7 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
       key={`${copy}-${item.id}`}
       style={cardStyle(index, item)}
     >
-      <img src={item.src} alt="" draggable="false" loading={copy === 'a' && index < 4 ? 'eager' : 'lazy'} decoding="async" />
+      <img src={item.src} alt="" draggable="false" loading={copy === 'a' && index < 2 ? 'eager' : 'lazy'} fetchPriority={copy === 'a' && index < 2 ? 'high' : 'low'} decoding="async" />
     </figure>)}
   </div>;
 

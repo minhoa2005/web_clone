@@ -6,12 +6,11 @@ import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlig
 import { EVENTS, readEventHash } from './history.js';
 import { getNarration } from './narration.js';
 import { prefersReducedMotion } from './motion.js';
-import { PHASE, createExperience, displayPhase, evidenceDocked, globeArrived, restoreEvent, selectEvent, skipTransition as skipPhase, transitionIsRunning } from './experience.js';
+import { createExperience, displayPhase, evidenceDocked, globeArrived, restoreEvent, selectEvent, skipTransition as skipPhase } from './experience.js';
 import EventImageField from './EventImageField.jsx';
 import EvidenceCard from './EvidenceCard.jsx';
-import ChapterTransition from './ChapterTransition.jsx';
 import HistoricalRecap from './HistoricalRecap.jsx';
-import { chapterForEvent, chapterProgress } from './chapters.js';
+import MobileTimeline from './MobileTimeline.jsx';
 import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?url';
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
@@ -310,7 +309,8 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick, 
 }
 
 export default function App() {
-  const initialPlace = placeMap.get(readEventHash(window.location.hash).id);
+  const initialEventId = new URLSearchParams(window.location.hash.slice(1)).get('event');
+  const initialPlace = initialEventId ? placeMap.get(initialEventId) : null;
   const [mode, setMode] = useState(() => {
     return initialPlace && !PLACES.includes(initialPlace) ? 'wishlist' : 'visited';
   });
@@ -325,10 +325,7 @@ export default function App() {
     ? restoreEvent({ eventId: initialPlace.id, revision: 0, hasEvidence: Boolean(initialPlace.photos?.length) })
     : createExperience());
   const [promotionCancelled, setPromotionCancelled] = useState(false);
-  const [chapterCard, setChapterCard] = useState(null);
   const [recapOpen, setRecapOpen] = useState(false);
-  const chapterRef = useRef(null);
-  const chapterTimerRef = useRef(null);
   const recapOpenRef = useRef(false);
   const experienceWatchdogRef = useRef(null);
   const focusRevisionRef = useRef(0);
@@ -349,13 +346,8 @@ export default function App() {
   const narrationTimingRef = useRef([]);
   const narrationSyncRef = useRef(null);
   const location = eventLocation(selected, focusedLocationId);
-  const currentChapter = chapterForEvent(selected);
-  const chapterPosition = chapterProgress(selected);
   const evidence = selected ? eventEvidence(selected) : null;
-  const showEvidence = Boolean(evidence && experience.ready);
-  const evidenceUrl = evidence?.kind === 'page'
-    ? `${textbookUrl}#page=${evidence.page || 1}`
-    : evidence?.url;
+  const showEvidence = Boolean(evidence?.kind === 'page' && experience.ready);
   const list = LISTS[mode];
   const groupedPlaces = useMemo(() => groupPlaces(list), [list]);
 
@@ -497,7 +489,7 @@ export default function App() {
         cancelAudio();
         tourPhaseRef.current = 'idle';
         updateTourStatus('idle');
-        setTourError(errorMsg || `Không tìm thấy tệp âm thanh (public/audio/${place.id}.mp3).`);
+        setTourError(errorMsg || `Không thể phát bản thuyết minh cho “${place.short}”. Hãy thử lại hoặc chuyển sang sự kiện tiếp theo.`);
       };
 
       audio.onended = () => {
@@ -514,7 +506,7 @@ export default function App() {
       };
 
       audio.onerror = () => {
-        handleAudioError(`Không tìm thấy tệp âm thanh (public/audio/${place.id}.mp3).`);
+        handleAudioError(`Không thể phát bản thuyết minh cho “${place.short}”. Hãy thử lại hoặc chuyển sang sự kiện tiếp theo.`);
       };
 
       audio.src = audioClipUrl(place.id);
@@ -527,7 +519,7 @@ export default function App() {
           if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
           handleAudioError(error?.name === 'NotAllowedError'
             ? 'Trình duyệt chặn tự động phát âm thanh.'
-            : `Không thể phát tệp âm thanh (public/audio/${place.id}.mp3).`);
+            : `Không thể phát bản thuyết minh cho “${place.short}”. Hãy thử lại hoặc chuyển sang sự kiện tiếp theo.`);
         });
       }
     }, cameraDelay);
@@ -605,19 +597,6 @@ export default function App() {
       setNarrationText('');
     }
   }, [tourStatus, clearNarrationSync]);
-
-  // Chapter boundaries: announce the new chapter without touching narration.
-  useEffect(() => {
-    const chapter = chapterForEvent(selected);
-    const previous = chapterRef.current;
-    chapterRef.current = chapter?.id || null;
-    if (!chapter || !previous || previous === chapter.id) return;
-    window.clearTimeout(chapterTimerRef.current);
-    setChapterCard(chapter);
-    chapterTimerRef.current = window.setTimeout(() => setChapterCard(null), 4200);
-  }, [selected]);
-
-  useEffect(() => () => window.clearTimeout(chapterTimerRef.current), []);
 
   useEffect(() => { recapOpenRef.current = recapOpen; }, [recapOpen]);
 
@@ -702,12 +681,6 @@ export default function App() {
     }, 0);
   }, [clearExperienceWatchdog, stopTour]);
 
-  const openReadingNow = useCallback(() => {
-    clearExperienceWatchdog();
-    setPromotionCancelled(true);
-    setExperience((state) => skipPhase(state));
-  }, [clearExperienceWatchdog]);
-
   const changeMode = (nextMode) => {
     selectPlace(LISTS[nextMode][0]);
   };
@@ -777,8 +750,6 @@ export default function App() {
     clearExperienceWatchdog();
     setExperience((state) => evidenceDocked(state, revision));
   }, [clearExperienceWatchdog]);
-  const transitionActive = Boolean(selected) && experience.eventId === selected?.id && transitionIsRunning(experience);
-
   useEffect(() => { selectedIdRef.current = selected?.id || null; }, [selected]);
 
   // Move focus into the reading surface once per deliberate selection.
@@ -792,7 +763,7 @@ export default function App() {
 
   return (
     <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`} data-phase={displayPhase(experience, tourStatus)}>
-      <audio ref={audioRef} preload="auto" aria-hidden="true" />
+      <audio ref={audioRef} preload="none" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
       <EventImageField
         list={list}
@@ -806,7 +777,7 @@ export default function App() {
       />
 
       <div className={`evidence-dock${showEvidence ? ' is-filled' : ''}`} ref={evidenceDockRef}>
-        {showEvidence && <EvidenceCard event={selected} evidence={evidence} fullPageUrl={evidenceUrl} />}
+        {showEvidence && <EvidenceCard evidence={evidence} />}
       </div>
       <GlobeStage
         mode={mode}
@@ -820,22 +791,6 @@ export default function App() {
       <header className="head">
         <p className="head__title">lịch sử <em>Đảng</em></p>
       </header>
-
-      {currentChapter && <div className="chapter-badge" data-chapter={currentChapter.id}>
-        <p className="chapter-badge__label">{currentChapter.label} · {currentChapter.range}</p>
-        <p className="chapter-badge__title">{currentChapter.title}</p>
-        <div className="chapter-badge__meter" aria-hidden="true"><span style={{ width: `${Math.round((chapterPosition?.ratio || 0) * 100)}%` }} /></div>
-        <p className="chapter-badge__count">{chapterPosition ? `${chapterPosition.position} / ${chapterPosition.total}` : `${currentChapter.count} sự kiện`}</p>
-      </div>}
-
-      <ChapterTransition chapter={chapterCard} />
-
-      {transitionActive && <div className="transit" role="status">
-        <p className="transit__meta">{selected.year} · {location?.country || selected.country}</p>
-        <p className="transit__title">{selected.short}</p>
-        <p className="transit__state">{experience.phase === PHASE.presentingEvidence ? 'Đang đưa trang nguồn vào…' : 'Đang di chuyển đến địa danh…'}</p>
-        <button type="button" className="transit__skip" onClick={openReadingNow}>Mở ngay</button>
-      </div>}
 
       <nav className="controls" aria-label="Điều khiển địa cầu">
         <div className="mode-toggle" role="group" aria-label="Giai đoạn lịch sử">
@@ -881,6 +836,8 @@ export default function App() {
         })}
       </nav>
 
+      <MobileTimeline groupedPlaces={groupedPlaces} list={list} selected={selected} onSelect={selectPlace} />
+
       <aside
         className={`place-panel${selected && experience.ready ? ' place-panel--open' : ''}`}
         ref={panelRef}
@@ -892,19 +849,28 @@ export default function App() {
       >
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
         {selected && <>
-          {currentChapter && <p className="place-panel__chapter">{currentChapter.label} · {currentChapter.range}</p>}
           <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
           <h2 id="place-panel-title">{selected.city}</h2>
           {showEvidence && <div className="place-panel__evidence">
-            <EvidenceCard event={selected} evidence={evidence} fullPageUrl={evidenceUrl} variant="inline" />
+            <EvidenceCard evidence={evidence} variant="inline" />
           </div>}
+          <p className="place-panel__label">Sự kiện</p>
           <p className="place-panel__note">{selected.note}</p>
+          <p className="place-panel__label">Bối cảnh</p>
           <p className="place-panel__note">{selected.context}</p>
+          <p className="place-panel__label">Ý nghĩa</p>
           <p className="place-panel__note">{selected.significance}</p>
-          {selected.annotation && <p className="place-panel__note">{selected.annotation}</p>}
+          {selected.annotation && <>
+            <p className="place-panel__label">Ghi chú nguồn</p>
+            <p className="place-panel__note">{selected.annotation}</p>
+          </>}
           {selected.places.length > 1 && <div className="event-locations" aria-label="Địa danh của sự kiện">{selected.places.map((id) => <button key={id} className={`places-link${location?.id === id ? ' is-active' : ''}`} aria-pressed={location?.id === id} onClick={() => selectPlace(selected, id)}>{eventLocation(selected, id).name}</button>)}</div>}
-          <p className="place-panel__note">{location ? `${location.name} · ${location.today}. ` : ''}Địa lý hiện đại chỉ để định hướng, không tái dựng biên giới lịch sử. Đường nối biểu thị quan hệ được chú thích.</p>
-          <p className="place-panel__note"><a href={selected.external?.url || textbookUrl} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{selected.external ? selected.external.title : `Giáo trình Lịch sử Đảng Cộng sản Việt Nam, 2021 · tr. ${selected.pages.join(', ')}`}</a></p>
+          <p className="place-panel__label">Địa lý</p>
+          <p className="place-panel__note">{location ? `${location.name} · ${location.today}` : 'Phạm vi cả nước'}</p>
+          <p className="place-panel__label">Nguồn</p>
+          <a className="place-panel__citation" href={selected.external?.url || textbookUrl} target="_blank" rel="noreferrer">
+            <span>{selected.external ? selected.external.title : `Giáo trình Lịch sử Đảng Cộng sản Việt Nam, 2021 · tr. ${selected.pages.join(', ')}`}</span>
+          </a>
           <p className="place-panel__coordinates">{!location ? 'Phạm vi cả nước · Không gán một tọa độ' : <>{location.lat.toFixed(2)}° {location.lat >= 0 ? 'N' : 'S'} <span>·</span> {Math.abs(location.lng).toFixed(2)}° {location.lng >= 0 ? 'E' : 'W'}</>}</p>
         </>}
       </aside>
