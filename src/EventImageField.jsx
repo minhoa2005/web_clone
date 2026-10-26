@@ -1,9 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { prefersReducedMotion } from './motion.js';
+import { MOTION, prefersReducedMotion } from './motion.js';
 
 const MAX_DESKTOP_ITEMS = 24;
 const MAX_MOBILE_ITEMS = 10;
-const PROMOTION_DURATION = 820;
 const IMAGE_ASPECTS = [0.78, 1.12, 0.92, 1.36, 0.86, 1.18, 0.72, 1.24];
 function photoUrl(photo) {
   return photo?.src ? `${import.meta.env.BASE_URL}${photo.src}` : '';
@@ -73,6 +72,13 @@ function targetCenter(aspect = 1) {
   };
 }
 
+function dockTarget(node, aspect) {
+  const rect = node?.getBoundingClientRect();
+  if (!rect || rect.width < 80 || rect.height < 80) return null;
+  const width = Math.min(rect.width, rect.height * aspect);
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, width };
+}
+
 function sourceCard(ribbon, itemId) {
   if (!ribbon || !itemId) return null;
   const nodes = [...ribbon.querySelectorAll('[data-image-id]')].filter((node) => node.dataset.imageId === itemId);
@@ -89,7 +95,7 @@ function sourceCard(ribbon, itemId) {
   })[0] || null;
 }
 
-export default function EventImageField({ list, selected, focusRevision, focusReadyRevision, promotionCancelled, onPromotionComplete }) {
+export default function EventImageField({ list, selected, focusRevision, focusReadyRevision, promotionCancelled, docked, dockRef, onPromotionComplete }) {
   const pool = useMemo(() => buildPool(list), [list]);
   const activeItem = selectedItemFor(pool, selected);
   const activeItemId = activeItem?.id || null;
@@ -122,9 +128,14 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
 
   useLayoutEffect(() => {
     if (!activeItem || promotionCancelled || focusReadyRevision !== focusRevision || focusRevision <= 0) return;
+    if (window.innerWidth <= 760) {
+      // Small screens read the evidence inline inside the panel; nothing flies.
+      onPromotionComplete?.(focusRevision);
+      return;
+    }
     const source = sourceCard(ribbonRef.current, activeItem.id);
     const sourceRect = source?.getBoundingClientRect();
-    const target = targetCenter(activeItem.aspect);
+    const target = dockTarget(dockRef?.current, activeItem.aspect) || targetCenter(activeItem.aspect);
     const safeRect = sourceRect?.width > 0 ? {
       x: sourceRect.x,
       y: sourceRect.y,
@@ -138,7 +149,21 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     };
     setFocusImage({ item: activeItem, sourceRect: safeRect, target, sequence: sequenceRef.current });
     setPhase('promoting');
-  }, [activeItem, focusReadyRevision, focusRevision, promotionCancelled]);
+  }, [activeItem, dockRef, focusReadyRevision, focusRevision, onPromotionComplete, promotionCancelled]);
+
+  // Hand the landed page to the docked evidence card once reading begins.
+  useEffect(() => {
+    if (!docked || !focusImage) return undefined;
+    sequenceRef.current += 1;
+    animationRef.current?.cancel?.();
+    animationRef.current = null;
+    focusRef.current?.animate?.([
+      { opacity: 1 },
+      { opacity: 0 },
+    ], { duration: MOTION.evidenceHandoff, easing: 'linear', fill: 'forwards' });
+    const timer = window.setTimeout(() => setFocusImage(null), MOTION.evidenceHandoff);
+    return () => window.clearTimeout(timer);
+  }, [docked, focusImage]);
 
   useLayoutEffect(() => {
     if (!focusImage || !focusRef.current || phase !== 'promoting') return undefined;
@@ -173,7 +198,7 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
       { transform: 'translate3d(0,0,0) rotate(-3deg) scale(1)', opacity: 0.18, filter: 'grayscale(.7) contrast(.92) brightness(.7)', clipPath: 'inset(5% 7% 5% 7%)' },
       { transform: `translate3d(${deltaX * 0.54}px, ${deltaY * 0.3 - 54}px, 0) rotate(-1deg) scale(${targetScale * 0.76})`, opacity: 0.9, filter: 'grayscale(.18) contrast(1) brightness(.88)', clipPath: 'inset(1% 2% 1% 2%)', offset: 0.56 },
       { transform: finalTransform, opacity: 1, filter: 'grayscale(0) contrast(1.04) brightness(1)', clipPath: 'inset(0 0 0 0)' },
-    ], { duration: PROMOTION_DURATION, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' });
+    ], { duration: MOTION.evidenceFlight, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' });
     animationRef.current = animation;
     animation.onfinish = finish;
     animation.oncancel = () => {};
