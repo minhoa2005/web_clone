@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Globe from 'globe.gl';
 import { BufferGeometry, Float32BufferAttribute, LineBasicMaterial, LineSegments } from 'three';
 import { countryOutlinePositions } from './globeGeometry.js';
-import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation } from './historicalPlaces.js';
+import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation, eventEvidence } from './historicalPlaces.js';
 import { EVENTS, readEventHash } from './history.js';
 import { getNarration } from './narration.js';
 import { prefersReducedMotion } from './motion.js';
 import { PHASE, createExperience, displayPhase, evidenceDocked, globeArrived, restoreEvent, selectEvent, skipTransition as skipPhase, transitionIsRunning } from './experience.js';
 import EventImageField from './EventImageField.jsx';
+import EvidenceCard from './EvidenceCard.jsx';
 import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?url';
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
@@ -320,6 +321,7 @@ export default function App() {
   const [promotionCancelled, setPromotionCancelled] = useState(false);
   const experienceWatchdogRef = useRef(null);
   const focusRevisionRef = useRef(0);
+  const evidenceDockRef = useRef(null);
   const tourStatusRef = useRef('idle');
   const tourIndexRef = useRef(-1);
   const tourTokenRef = useRef(0);
@@ -332,6 +334,11 @@ export default function App() {
   const narrationTimingRef = useRef([]);
   const narrationSyncRef = useRef(null);
   const location = eventLocation(selected, focusedLocationId);
+  const evidence = selected ? eventEvidence(selected) : null;
+  const showEvidence = Boolean(evidence && experience.ready);
+  const evidenceUrl = evidence?.kind === 'page'
+    ? `${textbookUrl}#page=${evidence.page || 1}`
+    : evidence?.url;
   const list = LISTS[mode];
   const groupedPlaces = useMemo(() => groupPlaces(list), [list]);
 
@@ -729,8 +736,14 @@ export default function App() {
         focusRevision={focusRevision}
         focusReadyRevision={focusReadyRevision}
         promotionCancelled={promotionCancelled}
+        docked={experience.ready}
+        dockRef={evidenceDockRef}
         onPromotionComplete={handlePromotionComplete}
       />
+
+      <div className={`evidence-dock${showEvidence ? ' is-filled' : ''}`} ref={evidenceDockRef}>
+        {showEvidence && <EvidenceCard event={selected} evidence={evidence} fullPageUrl={evidenceUrl} />}
+      </div>
       <GlobeStage
         mode={mode}
         selected={selected}
@@ -799,6 +812,9 @@ export default function App() {
         {selected && <>
           <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
           <h2>{selected.city}</h2>
+          {showEvidence && <div className="place-panel__evidence">
+            <EvidenceCard event={selected} evidence={evidence} fullPageUrl={evidenceUrl} variant="inline" />
+          </div>}
           <p className="place-panel__note">{selected.note}</p>
           <p className="place-panel__note">{selected.context}</p>
           <p className="place-panel__note">{selected.significance}</p>

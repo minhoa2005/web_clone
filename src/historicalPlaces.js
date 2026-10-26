@@ -29,6 +29,7 @@ export const HISTORICAL_PLACES = EVENTS.map((event) => {
     annotation: event.note,
     photos: event.pages.map((page) => ({
       src: `assets/sources/page-${page}.webp`,
+      page,
       title: `Giáo trình 2021 · trang ${page}`,
     })),
   };
@@ -37,6 +38,20 @@ export const HISTORICAL_PLACES = EVENTS.map((event) => {
 export const PLACES = HISTORICAL_PLACES.filter((event) => ['preparation', 'formation'].includes(event.period));
 export const WISHLIST = HISTORICAL_PLACES.filter((event) => !PLACES.includes(event));
 export const REGION_ORDER = PERIODS.map((period) => `${period.range} · ${period.title}`);
+
+// The cited evidence shown beside the interpretation. Textbook events resolve to a
+// scanned page; supplement-only events (ASEAN, WTO) resolve to their external record.
+// No transcription is available for the 2021 scan, so the card never invents one.
+export function eventEvidence(event) {
+  const photo = event?.photos?.[0];
+  if (photo?.src) {
+    return { kind: 'page', src: photo.src, page: photo.page, title: photo.title };
+  }
+  if (event?.external?.url) {
+    return { kind: 'external', title: event.external.title, url: event.external.url };
+  }
+  return null;
+}
 
 export function eventLocation(event, locationId) {
   const id = event?.places.includes(locationId) ? locationId : event?.places[0];

@@ -1,3 +1,9 @@
+// Shared motion tokens for the evidence sequence.
+export const MOTION = Object.freeze({
+  evidenceFlight: 820,
+  evidenceHandoff: 180,
+});
+
 const PARAM = 'motion';
 const FULL_VALUES = ['full', 'on', '1', 'yes', 'no-preference'];
 const REDUCE_VALUES = ['reduce', 'reduced', 'off', '0', 'no'];
