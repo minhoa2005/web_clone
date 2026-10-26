@@ -91,9 +91,6 @@ button:focus-visible { outline: 1px solid var(--bone); outline-offset: 4px; }
 .head__gallery { color: var(--muted); font-size: 9px; letter-spacing: .2em; text-transform: uppercase; }
 .head__title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font: 500 18px/1 var(--serif); letter-spacing: .04em; white-space: nowrap; }
 .head__title em { color: var(--vermilion); font-weight: 400; }
-.head__demo-link { margin-left: auto; color: var(--muted); font-size: 9px; letter-spacing: .2em; text-decoration: none; pointer-events: auto; transition: color .2s ease; }
-.head__demo-link span { margin-left: 4px; color: var(--vermilion); }
-.head__demo-link:hover { color: var(--bone); }
 .head__stats { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
 .head__stats b { color: var(--bone); font-weight: 500; }
 .head__dot { width: 4px; height: 4px; border-radius: 50%; background: var(--vermilion); }
