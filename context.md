@@ -11,3 +11,7 @@ Highlight only the focused marker’s country. Era controls select their first e
 ## Guided timeline narration — 19 October 2026
 
 The controls above the mode switch narrate all 36 events in chronological order, starting from the selected event or from the beginning. Playback updates the mode and active right-hand list row, focuses each documented location, and plays the local ElevenLabs Vietnamese recording at `public/audio/<event-id>.mp3` using a single HTML audio player, while captions remain displayed from `src/narration.js`. Events without verified coordinates stay in the tour and play their audio without camera movement or marker creation. Play/pause preserves the clip position; stop, skip, previous/next, and manual event selection cancel or replace the active clip so audio never overlaps and stale callbacks cannot advance the timeline. Missing or failed audio clips stop playback at that event and present a visible error without falling back to browser speech synthesis. The asset naming, placement, and architecture notes are in `docs/AUTO_PLAY_GUIDE.md`.
+
+## Push after every change — 26 October 2026
+
+Commit and push each completed change to `origin/temp-1` automatically; do not wait for a separate request. Before pushing: fetch and pull if the remote moved, stage only the files the change touched (never `.impeccable/`, `node_modules/`, `dist/`, or `*.log`), run `npm test` and `npm run build`, then push and report the commit hash. Unrelated or unrelated-looking leftovers stay uncommitted until they belong to a change.

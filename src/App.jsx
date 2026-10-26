@@ -5,6 +5,8 @@ import { countryOutlinePositions } from './globeGeometry.js';
 import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation } from './historicalPlaces.js';
 import { EVENTS, readEventHash } from './history.js';
 import { getNarration } from './narration.js';
+import { prefersReducedMotion } from './motion.js';
+import EventImageField from './EventImageField.jsx';
 import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?url';
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
@@ -26,11 +28,6 @@ function groupPlaces(places) {
     const bIndex = REGION_ORDER.indexOf(b);
     return (aIndex < 0 ? 99 : aIndex) - (bIndex < 0 ? 99 : bIndex);
   });
-}
-
-function photoUrl(photo) {
-  if (!photo?.src) return '';
-  return `${import.meta.env.BASE_URL}${photo.src}`;
 }
 
 function audioClipUrl(eventId) {
@@ -62,7 +59,7 @@ function Pin({ place, kind, onPick }) {
   return element;
 }
 
-function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }) {
+function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick, onFocusReady }) {
   const hostRef = useRef(null);
   const globeRef = useRef(null);
   const selectRef = useRef(onPick);
@@ -74,8 +71,11 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
   const highlightDurationRef = useRef(0);
   const wakeRef = useRef(null);
   const cameraTargetRef = useRef(null);
+  const focusReadyRef = useRef(onFocusReady);
+  const focusReadyTimerRef = useRef(null);
 
   useEffect(() => { selectRef.current = onPick; }, [onPick]);
+  useEffect(() => { focusReadyRef.current = onFocusReady; }, [onFocusReady]);
   useEffect(() => { countriesRef.current = countries; }, [countries]);
 
   useEffect(() => {
@@ -86,6 +86,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     let highlightTimer;
     let idleTimer;
     let pauseFrame;
+    let depthFrame;
     let renderUntil = 0;
     let dragging = false;
 
@@ -108,7 +109,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
       .arcDashGap(0)
       .arcDashAnimateTime(0)
       .arcsTransitionDuration(0)
-      .polygonsTransitionDuration(window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1000)
+      .polygonsTransitionDuration(prefersReducedMotion() ? 0 : 1000)
       .polygonCapCurvatureResolution(3)
       .polygonAltitude((feature) => feature.__hl ? 0.04 : 0.005)
       .polygonCapColor((feature) => feature.__hl ? 'rgba(230,64,46,0.45)' : 'rgba(0,0,0,0)')
@@ -126,6 +127,25 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     controls.minDistance = 160;
     controls.maxDistance = 480;
     globe.pointOfView({ lat: 30, lng: -150, altitude: 2.3 }, 0);
+
+    const syncImageDepth = () => {
+      if (depthFrame) return;
+      depthFrame = window.requestAnimationFrame(() => {
+        depthFrame = null;
+        if (disposed) return;
+        const view = globe.pointOfView();
+        const altitude = view.altitude;
+        const depthScale = Math.max(.94, Math.min(1.08, 1 + (2.3 - altitude) * .055));
+        const depthX = Math.sin((view.lng + 150) * Math.PI / 180) * 22;
+        const depthY = Math.max(-14, Math.min(14, (view.lat - 30) * -.18));
+        const atlas = host.closest('.atlas');
+        atlas?.style.setProperty('--image-depth-scale', depthScale.toFixed(4));
+        atlas?.style.setProperty('--image-depth-x', `${depthX.toFixed(2)}px`);
+        atlas?.style.setProperty('--image-depth-y', `${depthY.toFixed(2)}px`);
+      });
+    };
+    controls.addEventListener('change', syncImageDepth);
+    syncImageDepth();
 
     const wake = (duration = 200) => {
       if (disposed || document.hidden) return;
@@ -212,8 +232,11 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     return () => {
       disposed = true;
       window.clearTimeout(highlightTimer);
+      window.clearTimeout(focusReadyTimerRef.current);
+      focusReadyTimerRef.current = null;
       window.clearTimeout(idleTimer);
       window.cancelAnimationFrame(pauseFrame);
+      window.cancelAnimationFrame(depthFrame);
       wakeRef.current = null;
       highlightRef.current = null;
       if (outlines) {
@@ -222,6 +245,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
         outlines.material.dispose();
       }
       observer.disconnect();
+      controls.removeEventListener('change', syncImageDepth);
       host.removeEventListener('pointerdown', pauseRotation, true);
       host.removeEventListener('wheel', wheel, true);
       window.removeEventListener('pointerup', release);
@@ -244,7 +268,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
   }, [list, mode, selected, location]);
 
   useEffect(() => {
-    const duration = focusRevision > 0 || !window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1000 : 0;
+    const duration = prefersReducedMotion() ? 0 : focusRevision > 0 ? 500 : 700;
     highlightDurationRef.current = duration;
     highlightRef.current?.(countries, duration);
   }, [countries, focusRevision]);
@@ -253,14 +277,23 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick }
     if (!globeRef.current) return;
     const controls = globeRef.current.controls();
     controls.autoRotate = !selected;
+    window.clearTimeout(focusReadyTimerRef.current);
+    focusReadyTimerRef.current = null;
     if (!location) { cameraTargetRef.current = null; wakeRef.current?.(200); return; }
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = prefersReducedMotion();
     // Explicit selection requests camera travel; reduced motion skips the camera tween.
     const duration = reducedMotion ? 0 : focusRevision > 0 ? 1500 : 900;
+    const highlightDuration = reducedMotion ? 0 : focusRevision > 0 ? 500 : 0;
+    const holdDuration = location && focusRevision > 0 ? 1000 : 0;
     const target = { lat: location.lat, lng: location.lng, altitude: 1.15 };
     cameraTargetRef.current = target;
     globeRef.current.pointOfView(target, duration);
     wakeRef.current?.(duration + 250);
+    if (focusRevision > 0) {
+      focusReadyTimerRef.current = window.setTimeout(() => {
+        focusReadyRef.current?.(focusRevision);
+      }, Math.max(duration, highlightDuration) + holdDuration);
+    }
   }, [selected, location, focusRevision]);
 
   return <div className="globe-host" ref={hostRef} aria-label="Địa cầu tương tác với các địa danh lịch sử" />;
@@ -277,6 +310,9 @@ export default function App() {
   const [tourStatus, setTourStatus] = useState('idle');
   const [tourIndex, setTourIndex] = useState(-1);
   const [tourError, setTourError] = useState('');
+  const [focusReadyRevision, setFocusReadyRevision] = useState(-1);
+  const [detailReady, setDetailReady] = useState(Boolean(initialPlace));
+  const detailRevealTimerRef = useRef(null);
   const tourStatusRef = useRef('idle');
   const tourIndexRef = useRef(-1);
   const tourTokenRef = useRef(0);
@@ -304,6 +340,10 @@ export default function App() {
     window.clearTimeout(tourTimerRef.current);
     tourTimerRef.current = null;
   };
+  const clearDetailRevealTimer = useCallback(() => {
+    window.clearTimeout(detailRevealTimerRef.current);
+    detailRevealTimerRef.current = null;
+  }, []);
   const clearNarrationSync = useCallback(() => {
     window.clearInterval(narrationSyncRef.current);
     narrationSyncRef.current = null;
@@ -331,7 +371,7 @@ export default function App() {
       elapsed = segmentEnd;
     }
 
-    const revealProgress = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const revealProgress = prefersReducedMotion()
       ? 1
       : Math.min(1, activeProgress / NARRATION_REVEAL_RATIO);
     const visibleLength = Math.max(1, Math.ceil(active.text.length * revealProgress));
@@ -356,14 +396,22 @@ export default function App() {
 
   const choosePlace = useCallback((place, locationId) => {
     const focus = eventLocation(place, locationId);
+    clearDetailRevealTimer();
     setMode(PLACES.includes(place) ? 'visited' : 'wishlist');
     setSelected(place);
     setFocusedLocationId(focus?.id || null);
     setFocusRevision((value) => value + 1);
+    setFocusReadyRevision(-1);
+    setDetailReady(false);
+    const reducedMotion = prefersReducedMotion();
+    detailRevealTimerRef.current = window.setTimeout(() => {
+      setDetailReady(true);
+      detailRevealTimerRef.current = null;
+    }, reducedMotion ? 1100 : 3500);
     const hash = new URLSearchParams({ event: place.id });
     if (focus) hash.set('location', focus.id);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${hash}`);
-  }, []);
+  }, [clearDetailRevealTimer]);
 
   const playStep = useCallback((index, token, locationId = null) => {
     if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
@@ -383,7 +431,7 @@ export default function App() {
     choosePlace(place, focus?.id || null);
     tourPhaseRef.current = 'focus';
 
-    const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = prefersReducedMotion();
     const cameraDelay = focus ? (reducedMotion ? 100 : 1750) : 100;
 
     tourTimerRef.current = window.setTimeout(() => {
@@ -573,10 +621,13 @@ export default function App() {
 
   const closePlace = useCallback(() => {
     stopTour();
+    clearDetailRevealTimer();
     setSelected(null);
     setFocusedLocationId(null);
+    setFocusReadyRevision(-1);
+    setDetailReady(false);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  }, [stopTour]);
+  }, [clearDetailRevealTimer, stopTour]);
 
   const changeMode = (nextMode) => {
     selectPlace(LISTS[nextMode][0]);
@@ -587,9 +638,12 @@ export default function App() {
     const onHashChange = () => {
       const place = window.location.hash ? placeMap.get(readEventHash(window.location.hash).id) : null;
       stopTour();
+      clearDetailRevealTimer();
       setSelected(place || null);
       setFocusedLocationId(eventLocation(place, new URLSearchParams(window.location.hash.slice(1)).get('location'))?.id || null);
       setFocusRevision((value) => value + 1);
+      setFocusReadyRevision(-1);
+      setDetailReady(Boolean(place));
       if (place) setMode(PLACES.includes(place) ? 'visited' : 'wishlist');
     };
     window.addEventListener('keydown', onKeyDown);
@@ -598,13 +652,14 @@ export default function App() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('hashchange', onHashChange);
     };
-  }, [closePlace, stopTour]);
+  }, [clearDetailRevealTimer, closePlace, stopTour]);
 
   useEffect(() => () => {
     tourTokenRef.current += 1;
     clearTourTimer();
+    clearDetailRevealTimer();
     cancelAudio();
-  }, [cancelAudio]);
+  }, [cancelAudio, clearDetailRevealTimer]);
 
   useEffect(() => { document.title = `${selected?.short || 'Lịch sử Đảng'} · Địa cầu lịch sử`; }, [selected]);
 
@@ -613,7 +668,7 @@ export default function App() {
     const nav = document.querySelector('.places-nav');
     if (!nav || window.getComputedStyle(nav).display === 'none') return;
     const activeRow = nav.querySelector('[aria-current="location"]');
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = prefersReducedMotion();
     activeRow?.scrollIntoView({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
   }, [selected, tourStatus]);
 
@@ -627,12 +682,33 @@ export default function App() {
       : tourStatus === 'complete' ? 'Phát lại từ đầu' : 'Phát thuyết minh';
   const onPlayClick = tourStatus === 'playing' ? pauseTour
     : tourStatus === 'paused' ? resumeTour : startTour;
+  const handleFocusReady = useCallback((revision) => {
+    setFocusReadyRevision(revision);
+  }, []);
+  const handlePromotionComplete = useCallback((revision) => {
+    clearDetailRevealTimer();
+    setDetailReady((ready) => ready || revision === focusRevision);
+  }, [clearDetailRevealTimer, focusRevision]);
 
   return (
-    <main className={`atlas atlas--${mode}`}>
+    <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`}>
       <audio ref={audioRef} preload="auto" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
-      <GlobeStage mode={mode} selected={selected} focusedLocationId={focusedLocationId} focusRevision={focusRevision} onPick={selectPlace} />
+      <EventImageField
+        list={list}
+        selected={selected}
+        focusRevision={focusRevision}
+        focusReadyRevision={focusReadyRevision}
+        onPromotionComplete={handlePromotionComplete}
+      />
+      <GlobeStage
+        mode={mode}
+        selected={selected}
+        focusedLocationId={focusedLocationId}
+        focusRevision={focusRevision}
+        onPick={selectPlace}
+        onFocusReady={handleFocusReady}
+      />
 
       <header className="head">
         <p className="head__title">lịch sử <em>Đảng</em></p>
@@ -682,7 +758,7 @@ export default function App() {
         })}
       </nav>
 
-      <aside className={`place-panel${selected ? ' place-panel--open' : ''}`} aria-hidden={!selected}>
+      <aside className={`place-panel${selected && detailReady ? ' place-panel--open' : ''}`} aria-hidden={!selected || !detailReady}>
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
         {selected && <>
           <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
@@ -694,12 +770,6 @@ export default function App() {
           {selected.places.length > 1 && <div className="event-locations" aria-label="Địa danh của sự kiện">{selected.places.map((id) => <button key={id} className={`places-link${location?.id === id ? ' is-active' : ''}`} aria-pressed={location?.id === id} onClick={() => selectPlace(selected, id)}>{eventLocation(selected, id).name}</button>)}</div>}
           <p className="place-panel__note">{location ? `${location.name} · ${location.today}. ` : ''}Địa lý hiện đại chỉ để định hướng, không tái dựng biên giới lịch sử. Đường nối biểu thị quan hệ được chú thích.</p>
           <p className="place-panel__note"><a href={selected.external?.url || textbookUrl} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{selected.external ? selected.external.title : `Giáo trình Lịch sử Đảng Cộng sản Việt Nam, 2021 · tr. ${selected.pages.join(', ')}`}</a></p>
-          <div className="place-photos" aria-label={`Trang tư liệu: ${selected.city}`}>
-            {(selected.photos || []).filter(Boolean).map((photo, index) => <figure className="place-photo" key={`${photo.src}-${index}`}>
-              <a href={photoUrl(photo)} target="_blank" rel="noreferrer"><img src={photoUrl(photo)} alt={`Bản chụp ${photo.title}, không phải ảnh sự kiện`} style={{ objectFit: 'contain' }} loading={index > 1 ? 'lazy' : 'eager'} onError={(event) => { event.currentTarget.closest('figure')?.classList.add('place-photo--missing'); }} /></a>
-              <figcaption><span>{photo.title || selected.city}</span><span>{String(index + 1).padStart(2, '0')}</span></figcaption>
-            </figure>)}
-          </div>
           <p className="place-panel__coordinates">{!location ? 'Phạm vi cả nước · Không gán một tọa độ' : <>{location.lat.toFixed(2)}° {location.lat >= 0 ? 'N' : 'S'} <span>·</span> {Math.abs(location.lng).toFixed(2)}° {location.lng >= 0 ? 'E' : 'W'}</>}</p>
         </>}
       </aside>

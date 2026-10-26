@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 import { LOCATIONS } from './history.js';
 import { loadGeography } from './geography.js';
+import { prefersReducedMotion, reducedMotionQuery } from './motion.js';
 
 export default function GlobeStage({ event, focusedPlace, zoom, viewRevision, onReady, onError, onPick }) {
   const hostRef = useRef(null);
@@ -21,7 +22,7 @@ export default function GlobeStage({ event, focusedPlace, zoom, viewRevision, on
     let readyFrame;
     let dragging = false;
     let contextCanvas;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const reducedMotion = reducedMotionQuery();
     const pause = () => {
       if (!dragging && !disposed) globe?.pauseAnimation();
     };
@@ -125,7 +126,7 @@ export default function GlobeStage({ event, focusedPlace, zoom, viewRevision, on
     if (!globe || !ready) return;
     const places = event.places.map((id) => LOCATIONS[id]);
     const focus = LOCATIONS[focusedPlace] || places[0] || { lat: 18, lng: 107 };
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = prefersReducedMotion();
     const duration = reducedMotion ? 0 : 550;
     wakeRef.current?.(duration + 200);
     globe.pointsData(places);
