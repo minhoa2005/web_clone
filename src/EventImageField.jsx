@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { prefersReducedMotion } from './motion.js';
 
 const MAX_DESKTOP_ITEMS = 24;
@@ -89,7 +89,7 @@ function sourceCard(ribbon, itemId) {
   })[0] || null;
 }
 
-export default function EventImageField({ list, selected, focusRevision, focusReadyRevision, onPromotionComplete }) {
+export default function EventImageField({ list, selected, focusRevision, focusReadyRevision, promotionCancelled, onPromotionComplete }) {
   const pool = useMemo(() => buildPool(list), [list]);
   const activeItem = selectedItemFor(pool, selected);
   const activeItemId = activeItem?.id || null;
@@ -110,8 +110,18 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     setPhase(activeItem ? 'waiting' : 'idle');
   }, [activeItemId, focusRevision]);
 
+  // A skipped transition must not start or finish its flight over the open panel.
+  useEffect(() => {
+    if (!promotionCancelled) return;
+    sequenceRef.current += 1;
+    animationRef.current?.cancel?.();
+    animationRef.current = null;
+    setFocusImage(null);
+    setPhase('idle');
+  }, [promotionCancelled]);
+
   useLayoutEffect(() => {
-    if (!activeItem || focusReadyRevision !== focusRevision || focusRevision <= 0) return;
+    if (!activeItem || promotionCancelled || focusReadyRevision !== focusRevision || focusRevision <= 0) return;
     const source = sourceCard(ribbonRef.current, activeItem.id);
     const sourceRect = source?.getBoundingClientRect();
     const target = targetCenter(activeItem.aspect);
@@ -128,7 +138,7 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     };
     setFocusImage({ item: activeItem, sourceRect: safeRect, target, sequence: sequenceRef.current });
     setPhase('promoting');
-  }, [activeItem, focusReadyRevision, focusRevision]);
+  }, [activeItem, focusReadyRevision, focusRevision, promotionCancelled]);
 
   useLayoutEffect(() => {
     if (!focusImage || !focusRef.current || phase !== 'promoting') return undefined;

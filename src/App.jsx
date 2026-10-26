@@ -6,6 +6,7 @@ import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlig
 import { EVENTS, readEventHash } from './history.js';
 import { getNarration } from './narration.js';
 import { prefersReducedMotion } from './motion.js';
+import { PHASE, createExperience, displayPhase, evidenceDocked, globeArrived, restoreEvent, selectEvent, skipTransition as skipPhase, transitionIsRunning } from './experience.js';
 import EventImageField from './EventImageField.jsx';
 import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?url';
 
@@ -13,6 +14,8 @@ const LISTS = { visited: PLACES, wishlist: WISHLIST };
 const placeMap = new Map([...PLACES, ...WISHLIST].map((place) => [place.id, place]));
 const NARRATION_REVEAL_RATIO = 0.7;
 const NARRATION_SYNC_INTERVAL = 80;
+// Fallback only: the reading panel normally opens on a real completion signal.
+const TRANSITION_WATCHDOG = 6000;
 
 function groupPlaces(places) {
   const regions = new Map();
@@ -311,8 +314,12 @@ export default function App() {
   const [tourIndex, setTourIndex] = useState(-1);
   const [tourError, setTourError] = useState('');
   const [focusReadyRevision, setFocusReadyRevision] = useState(-1);
-  const [detailReady, setDetailReady] = useState(Boolean(initialPlace));
-  const detailRevealTimerRef = useRef(null);
+  const [experience, setExperience] = useState(() => initialPlace
+    ? restoreEvent({ eventId: initialPlace.id, revision: 0, hasEvidence: Boolean(initialPlace.photos?.length) })
+    : createExperience());
+  const [promotionCancelled, setPromotionCancelled] = useState(false);
+  const experienceWatchdogRef = useRef(null);
+  const focusRevisionRef = useRef(0);
   const tourStatusRef = useRef('idle');
   const tourIndexRef = useRef(-1);
   const tourTokenRef = useRef(0);
@@ -340,9 +347,14 @@ export default function App() {
     window.clearTimeout(tourTimerRef.current);
     tourTimerRef.current = null;
   };
-  const clearDetailRevealTimer = useCallback(() => {
-    window.clearTimeout(detailRevealTimerRef.current);
-    detailRevealTimerRef.current = null;
+  const clearExperienceWatchdog = useCallback(() => {
+    window.clearTimeout(experienceWatchdogRef.current);
+    experienceWatchdogRef.current = null;
+  }, []);
+  const nextFocusRevision = useCallback(() => {
+    focusRevisionRef.current += 1;
+    setFocusRevision(focusRevisionRef.current);
+    return focusRevisionRef.current;
   }, []);
   const clearNarrationSync = useCallback(() => {
     window.clearInterval(narrationSyncRef.current);
@@ -396,22 +408,26 @@ export default function App() {
 
   const choosePlace = useCallback((place, locationId) => {
     const focus = eventLocation(place, locationId);
-    clearDetailRevealTimer();
+    const revision = nextFocusRevision();
+    const reducedMotion = prefersReducedMotion();
+    const hasEvidence = Boolean(place.photos?.length);
+    clearExperienceWatchdog();
     setMode(PLACES.includes(place) ? 'visited' : 'wishlist');
     setSelected(place);
     setFocusedLocationId(focus?.id || null);
-    setFocusRevision((value) => value + 1);
     setFocusReadyRevision(-1);
-    setDetailReady(false);
-    const reducedMotion = prefersReducedMotion();
-    detailRevealTimerRef.current = window.setTimeout(() => {
-      setDetailReady(true);
-      detailRevealTimerRef.current = null;
-    }, reducedMotion ? 1100 : 3500);
+    setPromotionCancelled(false);
+    setExperience((state) => selectEvent(state, { eventId: place.id, revision, hasEvidence, reducedMotion }));
+    if (!reducedMotion) {
+      experienceWatchdogRef.current = window.setTimeout(() => {
+        experienceWatchdogRef.current = null;
+        setExperience((state) => skipPhase(state));
+      }, TRANSITION_WATCHDOG);
+    }
     const hash = new URLSearchParams({ event: place.id });
     if (focus) hash.set('location', focus.id);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${hash}`);
-  }, [clearDetailRevealTimer]);
+  }, [clearExperienceWatchdog, nextFocusRevision]);
 
   const playStep = useCallback((index, token, locationId = null) => {
     if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
@@ -621,13 +637,20 @@ export default function App() {
 
   const closePlace = useCallback(() => {
     stopTour();
-    clearDetailRevealTimer();
+    clearExperienceWatchdog();
+    setPromotionCancelled(true);
+    setExperience(createExperience());
     setSelected(null);
     setFocusedLocationId(null);
     setFocusReadyRevision(-1);
-    setDetailReady(false);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  }, [clearDetailRevealTimer, stopTour]);
+  }, [clearExperienceWatchdog, stopTour]);
+
+  const openReadingNow = useCallback(() => {
+    clearExperienceWatchdog();
+    setPromotionCancelled(true);
+    setExperience((state) => skipPhase(state));
+  }, [clearExperienceWatchdog]);
 
   const changeMode = (nextMode) => {
     selectPlace(LISTS[nextMode][0]);
@@ -638,12 +661,15 @@ export default function App() {
     const onHashChange = () => {
       const place = window.location.hash ? placeMap.get(readEventHash(window.location.hash).id) : null;
       stopTour();
-      clearDetailRevealTimer();
+      clearExperienceWatchdog();
+      setPromotionCancelled(false);
       setSelected(place || null);
       setFocusedLocationId(eventLocation(place, new URLSearchParams(window.location.hash.slice(1)).get('location'))?.id || null);
-      setFocusRevision((value) => value + 1);
+      const revision = nextFocusRevision();
       setFocusReadyRevision(-1);
-      setDetailReady(Boolean(place));
+      setExperience(place
+        ? restoreEvent({ eventId: place.id, revision, hasEvidence: Boolean(place.photos?.length) })
+        : createExperience());
       if (place) setMode(PLACES.includes(place) ? 'visited' : 'wishlist');
     };
     window.addEventListener('keydown', onKeyDown);
@@ -652,14 +678,14 @@ export default function App() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('hashchange', onHashChange);
     };
-  }, [clearDetailRevealTimer, closePlace, stopTour]);
+  }, [clearExperienceWatchdog, closePlace, nextFocusRevision, stopTour]);
 
   useEffect(() => () => {
     tourTokenRef.current += 1;
     clearTourTimer();
-    clearDetailRevealTimer();
+    clearExperienceWatchdog();
     cancelAudio();
-  }, [cancelAudio, clearDetailRevealTimer]);
+  }, [cancelAudio, clearExperienceWatchdog]);
 
   useEffect(() => { document.title = `${selected?.short || 'Lịch sử Đảng'} · Địa cầu lịch sử`; }, [selected]);
 
@@ -684,14 +710,17 @@ export default function App() {
     : tourStatus === 'paused' ? resumeTour : startTour;
   const handleFocusReady = useCallback((revision) => {
     setFocusReadyRevision(revision);
+    setExperience((state) => globeArrived(state, revision));
   }, []);
   const handlePromotionComplete = useCallback((revision) => {
-    clearDetailRevealTimer();
-    setDetailReady((ready) => ready || revision === focusRevision);
-  }, [clearDetailRevealTimer, focusRevision]);
+    if (revision !== focusRevisionRef.current) return;
+    clearExperienceWatchdog();
+    setExperience((state) => evidenceDocked(state, revision));
+  }, [clearExperienceWatchdog]);
+  const transitionActive = Boolean(selected) && experience.eventId === selected?.id && transitionIsRunning(experience);
 
   return (
-    <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`}>
+    <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`} data-phase={displayPhase(experience, tourStatus)}>
       <audio ref={audioRef} preload="auto" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
       <EventImageField
@@ -699,6 +728,7 @@ export default function App() {
         selected={selected}
         focusRevision={focusRevision}
         focusReadyRevision={focusReadyRevision}
+        promotionCancelled={promotionCancelled}
         onPromotionComplete={handlePromotionComplete}
       />
       <GlobeStage
@@ -713,6 +743,13 @@ export default function App() {
       <header className="head">
         <p className="head__title">lịch sử <em>Đảng</em></p>
       </header>
+
+      {transitionActive && <div className="transit" role="status">
+        <p className="transit__meta">{selected.year} · {location?.country || selected.country}</p>
+        <p className="transit__title">{selected.short}</p>
+        <p className="transit__state">{experience.phase === PHASE.presentingEvidence ? 'Đang đưa trang nguồn vào…' : 'Đang di chuyển đến địa danh…'}</p>
+        <button type="button" className="transit__skip" onClick={openReadingNow}>Mở ngay</button>
+      </div>}
 
       <nav className="controls" aria-label="Điều khiển địa cầu">
         <div className="mode-toggle" role="tablist" aria-label="Giai đoạn lịch sử">
@@ -757,7 +794,7 @@ export default function App() {
         })}
       </nav>
 
-      <aside className={`place-panel${selected && detailReady ? ' place-panel--open' : ''}`} aria-hidden={!selected || !detailReady}>
+      <aside className={`place-panel${selected && experience.ready ? ' place-panel--open' : ''}`} aria-hidden={!selected || !experience.ready}>
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
         {selected && <>
           <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
