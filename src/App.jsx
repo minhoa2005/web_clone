@@ -9,6 +9,9 @@ import { prefersReducedMotion } from './motion.js';
 import { PHASE, createExperience, displayPhase, evidenceDocked, globeArrived, restoreEvent, selectEvent, skipTransition as skipPhase, transitionIsRunning } from './experience.js';
 import EventImageField from './EventImageField.jsx';
 import EvidenceCard from './EvidenceCard.jsx';
+import ChapterTransition from './ChapterTransition.jsx';
+import HistoricalRecap from './HistoricalRecap.jsx';
+import { chapterForEvent, chapterProgress } from './chapters.js';
 import textbookUrl from '../docs/Giao trinh lich su dang cong san viet nam.pdf?url';
 
 const LISTS = { visited: PLACES, wishlist: WISHLIST };
@@ -319,6 +322,11 @@ export default function App() {
     ? restoreEvent({ eventId: initialPlace.id, revision: 0, hasEvidence: Boolean(initialPlace.photos?.length) })
     : createExperience());
   const [promotionCancelled, setPromotionCancelled] = useState(false);
+  const [chapterCard, setChapterCard] = useState(null);
+  const [recapOpen, setRecapOpen] = useState(false);
+  const chapterRef = useRef(null);
+  const chapterTimerRef = useRef(null);
+  const recapOpenRef = useRef(false);
   const experienceWatchdogRef = useRef(null);
   const focusRevisionRef = useRef(0);
   const evidenceDockRef = useRef(null);
@@ -334,6 +342,8 @@ export default function App() {
   const narrationTimingRef = useRef([]);
   const narrationSyncRef = useRef(null);
   const location = eventLocation(selected, focusedLocationId);
+  const currentChapter = chapterForEvent(selected);
+  const chapterPosition = chapterProgress(selected);
   const evidence = selected ? eventEvidence(selected) : null;
   const showEvidence = Boolean(evidence && experience.ready);
   const evidenceUrl = evidence?.kind === 'page'
@@ -586,6 +596,26 @@ export default function App() {
     }
   }, [tourStatus, clearNarrationSync]);
 
+  // Chapter boundaries: announce the new chapter without touching narration.
+  useEffect(() => {
+    const chapter = chapterForEvent(selected);
+    const previous = chapterRef.current;
+    chapterRef.current = chapter?.id || null;
+    if (!chapter || !previous || previous === chapter.id) return;
+    window.clearTimeout(chapterTimerRef.current);
+    setChapterCard(chapter);
+    chapterTimerRef.current = window.setTimeout(() => setChapterCard(null), 4200);
+  }, [selected]);
+
+  useEffect(() => () => window.clearTimeout(chapterTimerRef.current), []);
+
+  useEffect(() => { recapOpenRef.current = recapOpen; }, [recapOpen]);
+
+  useEffect(() => {
+    if (tourStatus === 'complete') setRecapOpen(true);
+    else if (tourStatus === 'playing') setRecapOpen(false);
+  }, [tourStatus]);
+
   useEffect(() => () => clearNarrationSync(), [clearNarrationSync]);
 
   const moveTour = useCallback((offset) => {
@@ -664,7 +694,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    const onKeyDown = (event) => { if (event.key === 'Escape') closePlace(); };
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      if (recapOpenRef.current) { setRecapOpen(false); return; }
+      closePlace();
+    };
     const onHashChange = () => {
       const place = window.location.hash ? placeMap.get(readEventHash(window.location.hash).id) : null;
       stopTour();
@@ -757,6 +791,15 @@ export default function App() {
         <p className="head__title">lịch sử <em>Đảng</em></p>
       </header>
 
+      {currentChapter && <div className="chapter-badge" data-chapter={currentChapter.id}>
+        <p className="chapter-badge__label">{currentChapter.label} · {currentChapter.range}</p>
+        <p className="chapter-badge__title">{currentChapter.title}</p>
+        <div className="chapter-badge__meter" aria-hidden="true"><span style={{ width: `${Math.round((chapterPosition?.ratio || 0) * 100)}%` }} /></div>
+        <p className="chapter-badge__count">{chapterPosition ? `${chapterPosition.position} / ${chapterPosition.total}` : `${currentChapter.count} sự kiện`}</p>
+      </div>}
+
+      <ChapterTransition chapter={chapterCard} />
+
       {transitionActive && <div className="transit" role="status">
         <p className="transit__meta">{selected.year} · {location?.country || selected.country}</p>
         <p className="transit__title">{selected.short}</p>
@@ -810,6 +853,7 @@ export default function App() {
       <aside className={`place-panel${selected && experience.ready ? ' place-panel--open' : ''}`} aria-hidden={!selected || !experience.ready}>
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
         {selected && <>
+          {currentChapter && <p className="place-panel__chapter">{currentChapter.label} · {currentChapter.range}</p>}
           <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
           <h2>{selected.city}</h2>
           {showEvidence && <div className="place-panel__evidence">
@@ -825,6 +869,11 @@ export default function App() {
           <p className="place-panel__coordinates">{!location ? 'Phạm vi cả nước · Không gán một tọa độ' : <>{location.lat.toFixed(2)}° {location.lat >= 0 ? 'N' : 'S'} <span>·</span> {Math.abs(location.lng).toFixed(2)}° {location.lng >= 0 ? 'E' : 'W'}</>}</p>
         </>}
       </aside>
+      <HistoricalRecap
+        open={recapOpen}
+        onRestart={() => { setRecapOpen(false); startTour(); }}
+        onClose={() => setRecapOpen(false)}
+      />
     </main>
   );
 }
