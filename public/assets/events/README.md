@@ -18,9 +18,15 @@ Ví dụ:
 - Sự kiện 1954 (Chiến thắng Điện Biên Phủ): `dien-bien-1954.webp`
 - Sự kiện 1975 (Chiến dịch Hồ Chí Minh): `mua-xuan-1975.webp`
 
-## Cơ chế tự động nhận diện & Fallback an toàn
+## Cơ chế tự động dò tìm đa định dạng (Cascading) & Fallback an toàn
 
-- **Tự động nhận diện**: Ngay khi bạn sao chép file ảnh vào thư mục này với tên chuẩn `<event-id>.<ext>`, hệ thống sẽ tự động hiển thị hình ảnh sự kiện minh hoạ trong dải ruy-băng 3D, khi phóng to thuyết minh và trong thẻ tư liệu.
-- **Fallback an toàn**: Nếu một sự kiện chưa có file ảnh mới trong thư mục này, hệ thống sẽ tự động hiển thị trang giáo trình đối chiếu tương ứng để đảm bảo trải nghiệm luôn liền mạch, không bao giờ bị lỗi ảnh hỏng (broken image).
+- **Hỗ trợ 4 định dạng phổ biến:** Hệ thống tự động kiểm tra lần lượt:
+  1. `<event-id>.webp` (ưu tiên hàng đầu)
+  2. `<event-id>.jpg`
+  3. `<event-id>.jpeg`
+  4. `<event-id>.png`
+  
+  Do đó, bạn có thể lưu file ảnh theo bất kỳ định dạng nào (`.webp`, `.jpg`, `.jpeg` hoặc `.png`), hệ thống đều tự động nhận và hiển thị ngay lập tức.
+- **Fallback an toàn:** Nếu sự kiện chưa có bất kỳ file ảnh mới nào trong 4 định dạng trên, hệ thống sẽ tự động hiển thị trang giáo trình đối chiếu tương ứng để đảm bảo trải nghiệm luôn liền mạch, không bao giờ bị lỗi ảnh hỏng (broken image).
 
 Xem danh sách đầy đủ 36 mã ID và gợi ý hình ảnh chi tiết tại: `docs/EVENT_IMAGES_GUIDE.md`

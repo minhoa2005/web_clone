@@ -1,6 +1,18 @@
 // Danh mục cấu hình hình ảnh sự kiện / minh hoạ cho từng phần thuyết minh lịch sử.
 // Khớp 100% với 36 sự kiện trong src/history.js và các tệp âm thanh public/audio/<id>.mp3.
 
+export const SUPPORTED_EXTENSIONS = Object.freeze(['webp', 'jpg', 'jpeg', 'png']);
+
+/**
+ * Trả về danh sách đường dẫn ứng cử viên theo thứ tự ưu tiên các định dạng.
+ * Cho phép người dùng lưu file dưới dạng .webp, .jpg, .jpeg hoặc .png.
+ * @param {string} eventId
+ * @returns {Array<string>}
+ */
+export function getCandidateImageUrls(eventId) {
+  return SUPPORTED_EXTENSIONS.map((ext) => `assets/events/${eventId}.${ext}`);
+}
+
 export const EVENT_ILLUSTRATIONS = {
   'hanh-trinh-1911': {
     id: 'hanh-trinh-1911',
@@ -365,12 +377,18 @@ export const EVENT_ILLUSTRATIONS = {
 };
 
 /**
- * Lấy thông tin cấu hình ảnh minh hoạ của một sự kiện theo ID.
+ * Lấy thông tin cấu hình ảnh minh hoạ của một sự kiện theo ID, bao gồm danh sách các định dạng ứng cử viên.
  * @param {string} eventId
  * @returns {object|null}
  */
 export function getEventIllustration(eventId) {
-  return EVENT_ILLUSTRATIONS[eventId] || null;
+  const item = EVENT_ILLUSTRATIONS[eventId];
+  if (!item) return null;
+  return {
+    ...item,
+    candidates: getCandidateImageUrls(eventId),
+    supportedExtensions: SUPPORTED_EXTENSIONS,
+  };
 }
 
 /**
@@ -378,5 +396,5 @@ export function getEventIllustration(eventId) {
  * @returns {Array<object>}
  */
 export function getAllEventIllustrations() {
-  return Object.values(EVENT_ILLUSTRATIONS);
+  return Object.keys(EVENT_ILLUSTRATIONS).map((id) => getEventIllustration(id));
 }
