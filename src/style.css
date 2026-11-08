@@ -166,7 +166,10 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
 
 /* Evidence: the cited page travels into a slot beside the reading panel. */
 .evidence-dock {
-  position: absolute; z-index: 34; top: 100px; bottom: 196px;
+  position: absolute; z-index: 34; top: 100px;
+  /* The narration band (caption at bottom:174px plus its ~112px of text and padding)
+     reaches ~286px up, so the page stops 300px from the edge and never shows through it. */
+  bottom: 300px;
   left: calc(min(420px, 92vw) + clamp(16px, 3vw, 36px)); width: min(36vw, 400px);
   opacity: 0; pointer-events: none; transition: opacity .3s ease;
 }
