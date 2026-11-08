@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Globe from 'globe.gl';
 import { BufferGeometry, Float32BufferAttribute, LineBasicMaterial, LineSegments } from 'three';
 import { countryOutlinePositions } from './globeGeometry.js';
+import vietnamArchipelagos from './vietnamArchipelagos.js';
 import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation, eventEvidence } from './historicalPlaces.js';
 import { EVENTS, readEventHash } from './history.js';
 import { getNarration } from './narration.js';
@@ -221,7 +222,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick, 
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Country outlines unavailable')))
       .then((geo) => {
         if (disposed) return;
-        countryFeatures = geo.features || [];
+        countryFeatures = [...(geo.features || []), ...vietnamArchipelagos];
         const geometry = new BufferGeometry();
         geometry.setAttribute('position', new Float32BufferAttribute(countryOutlinePositions(countryFeatures, globe.getGlobeRadius() * 1.0051), 3));
         outlines = new LineSegments(geometry, new LineBasicMaterial({ color: '#ece7de', opacity: .05, transparent: true, depthWrite: false }));
