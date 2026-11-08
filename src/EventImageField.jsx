@@ -123,7 +123,7 @@ function startBeltSpeedBurst(belt) {
   const animation = belt?.getAnimations?.().find((item) => item.animationName === 'image-field-travel');
   if (!animation) return null;
 
-  const originalRate = animation.playbackRate;
+  const originalRate = 1;
   const peakRate = Math.max(originalRate, MOTION.evidenceBeltPeakRate);
   let phase = 'accelerating';
   let phaseStartRate = originalRate;
@@ -137,6 +137,7 @@ function startBeltSpeedBurst(belt) {
     if (typeof animation.updatePlaybackRate === 'function') animation.updatePlaybackRate(rate);
     else animation.playbackRate = rate;
   };
+  setRate(originalRate);
   const tick = (now) => {
     const duration = phase === 'accelerating' ? MOTION.evidenceBeltRampUp : MOTION.evidenceBeltSettle;
     const progress = clamp((now - startedAt) / duration, 0, 1);
@@ -170,7 +171,6 @@ function startBeltSpeedBurst(belt) {
   return {
     release,
     cancel: () => {
-      if (stopped) return;
       stopped = true;
       window.clearTimeout(fallbackTimer);
       window.cancelAnimationFrame(frame);
