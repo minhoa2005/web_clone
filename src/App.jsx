@@ -330,6 +330,7 @@ export default function App() {
   const experienceWatchdogRef = useRef(null);
   const focusRevisionRef = useRef(0);
   const evidenceDockRef = useRef(null);
+  const presentationDockRef = useRef(null);
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
   const focusPanelRef = useRef(false);
@@ -348,6 +349,7 @@ export default function App() {
   const location = eventLocation(selected, focusedLocationId);
   const evidence = selected ? eventEvidence(selected) : null;
   const selectedEventIndex = EVENTS.findIndex((event) => event.id === selected?.id);
+  const isTourActive = ['playing', 'paused'].includes(tourStatus);
   const evidenceNarrationState = tourIndex === selectedEventIndex ? tourStatus : 'idle';
   const showEvidence = Boolean(evidence?.illustration?.photos?.length && experience.ready);
   const list = LISTS[mode];
@@ -756,12 +758,12 @@ export default function App() {
 
   // Move focus into the reading surface once per deliberate selection.
   useEffect(() => {
-    if (!experience.ready || !selected || !focusPanelRef.current) return;
+    if (!experience.ready || !selected || !focusPanelRef.current || isTourActive) return;
     focusPanelRef.current = false;
     const panel = panelRef.current;
     if (!panel || panel.contains(document.activeElement)) return;
     panel.focus({ preventScroll: true });
-  }, [experience.ready, selected]);
+  }, [experience.ready, selected, isTourActive]);
 
   return (
     <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`} data-phase={displayPhase(experience, tourStatus)}>
@@ -774,13 +776,37 @@ export default function App() {
         focusReadyRevision={focusReadyRevision}
         promotionCancelled={promotionCancelled}
         docked={experience.ready}
-        dockRef={evidenceDockRef}
+        dockRef={isTourActive ? presentationDockRef : evidenceDockRef}
         onPromotionComplete={handlePromotionComplete}
       />
 
-      <div className={`evidence-dock${showEvidence ? ' is-filled' : ''}`} ref={evidenceDockRef}>
-        {showEvidence && <EvidenceCard evidence={evidence} eventId={selected.id} narrationState={evidenceNarrationState} audioRef={audioRef} />}
-      </div>
+      {!isTourActive && (
+        <div className={`evidence-dock${showEvidence ? ' is-filled' : ''}`} ref={evidenceDockRef}>
+          {showEvidence && <EvidenceCard evidence={evidence} eventId={selected.id} narrationState={evidenceNarrationState} audioRef={audioRef} />}
+        </div>
+      )}
+
+      {isTourActive && selected && (
+        <section className="presentation-overlay" aria-label="Thông tin thuyết trình sự kiện">
+          <div className="presentation-overlay__header">
+            <p className="presentation-overlay__meta">
+              <span className="presentation-overlay__date">{selected.date}</span> · {location?.country || selected.country}
+            </p>
+            <h2 className="presentation-overlay__title">{selected.city}</h2>
+          </div>
+          <div className={`presentation-overlay__evidence${showEvidence ? ' is-filled' : ''}`} ref={presentationDockRef}>
+            {showEvidence && (
+              <EvidenceCard
+                evidence={evidence}
+                eventId={selected.id}
+                narrationState={evidenceNarrationState}
+                audioRef={audioRef}
+                variant="presentation"
+              />
+            )}
+          </div>
+        </section>
+      )}
       <GlobeStage
         mode={mode}
         selected={selected}
@@ -840,16 +866,16 @@ export default function App() {
       <MobileTimeline groupedPlaces={groupedPlaces} list={list} selected={selected} onSelect={selectPlace} />
 
       <aside
-        className={`place-panel${selected && experience.ready ? ' place-panel--open' : ''}`}
+        className={`place-panel${selected && experience.ready && !isTourActive ? ' place-panel--open' : ''}`}
         ref={panelRef}
         role="dialog"
         aria-modal="false"
         aria-labelledby="place-panel-title"
         tabIndex={-1}
-        aria-hidden={!selected || !experience.ready}
+        aria-hidden={!selected || !experience.ready || isTourActive}
       >
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
-        {selected && <>
+        {selected && !isTourActive && <>
           <p className="place-panel__country"><span className="place-panel__date">{selected.date}</span> · {location?.country || selected.country}</p>
           <h2 id="place-panel-title">{selected.city}</h2>
           {showEvidence && <div className="place-panel__evidence">

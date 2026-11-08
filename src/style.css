@@ -126,13 +126,20 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
 .guided-controls__position { min-width: 65px; padding: 0 5px; color: var(--muted); font-size: 9px; letter-spacing: .12em; text-align: center; white-space: nowrap; }
 .guided-controls__error { position: absolute; bottom: calc(100% + 8px); left: 50%; width: max-content; max-width: 90vw; padding: 7px 11px; transform: translateX(-50%); border: 1px solid var(--hairline); border-radius: 8px; background: rgba(11,11,12,.92); color: var(--bone); font-size: 11px; letter-spacing: .02em; text-align: center; }
 .narration-caption {
-  position: absolute; z-index: 40; left: 50%; bottom: 174px; width: min(680px, calc(100vw - 48px));
-  padding: 11px 18px 13px; transform: translateX(-50%); border-top: 1px solid var(--hairline);
-  background: linear-gradient(180deg, rgba(11,11,12,.08), rgba(11,11,12,.78));
+  position: absolute; z-index: 40; left: 50%; bottom: 174px; width: min(720px, calc(100vw - 48px));
+  padding: 12px 22px 14px; transform: translateX(-50%); border-top: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(11,11,12,.12), rgba(11,11,12,.82));
   text-align: center; pointer-events: none; animation: narration-in .35s ease both; transition: left .7s cubic-bezier(.16,1,.3,1);
 }
-.narration-caption__text { max-height: 4.7em; overflow: hidden; margin: 0; color: var(--bone); font-size: clamp(12px, 1.2vw, 15px); line-height: 1.55; }
-.narration-caption__cursor { display: inline-block; width: 1px; height: 1em; margin-left: 5px; vertical-align: -.12em; background: var(--vermilion); animation: narration-cursor 1s steps(1,end) infinite; }
+.narration-caption__text {
+  max-height: 5.4em; overflow: hidden; margin: 0; color: var(--bone);
+  font-size: clamp(16px, 1.7vw, 21px); line-height: 1.55; font-weight: 400;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+}
+.narration-caption__cursor {
+  display: inline-block; width: 2px; height: 1.1em; margin-left: 6px;
+  vertical-align: -.15em; background: var(--vermilion); animation: narration-cursor 1s steps(1,end) infinite;
+}
 @keyframes narration-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes narration-cursor { 50% { opacity: 0; } }
 .places-nav {
@@ -244,6 +251,94 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
 .place-panel__coordinates { margin-top: 16px; color: var(--muted); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; }
 .place-panel__coordinates span { color: var(--vermilion); padding: 0 5px; }
 
+/* Presentation overlay: transparent layout replacing the opaque reading panel during guided tours */
+.presentation-overlay {
+  position: absolute;
+  z-index: 35;
+  top: calc(50% - 36px);
+  transform: translateY(-50%);
+  left: clamp(20px, 2.5vw, 40px);
+  width: min(44vw, 760px);
+  max-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  pointer-events: none;
+  animation: presentation-fade-in .5s cubic-bezier(.16,1,.3,1) both;
+}
+
+@keyframes presentation-fade-in {
+  from { opacity: 0; transform: translateY(calc(-50% + 10px)); }
+  to { opacity: 1; transform: translateY(-50%); }
+}
+
+.presentation-overlay__header {
+  pointer-events: auto;
+  margin-bottom: 14px;
+}
+
+.presentation-overlay__meta {
+  margin: 0 0 8px;
+  color: var(--vermilion);
+  font-size: 11px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 8px rgba(11,11,12,.95);
+}
+
+.presentation-overlay__date {
+  color: var(--gold);
+}
+
+.presentation-overlay__title {
+  margin: 0;
+  font: italic 400 clamp(30px, 3.2vw, 44px)/1.12 "Noto Serif", Georgia, serif;
+  color: var(--bone);
+  text-shadow: 0 2px 14px rgba(11,11,12,.95);
+  word-break: break-word;
+}
+
+.presentation-overlay__evidence {
+  position: relative;
+  width: 100%;
+  height: clamp(320px, 48vh, 520px);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+
+.presentation-overlay__evidence.is-filled {
+  opacity: 1;
+}
+
+.presentation-overlay__evidence .evidence-card {
+  height: 100%;
+}
+
+.presentation-overlay__evidence .evidence-card__frame {
+  background: rgba(11,11,12,.55);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(236,231,222,.24);
+  box-shadow: 0 18px 40px rgba(0,0,0,.65);
+}
+
+.presentation-overlay__evidence .evidence-card__caption {
+  font-size: 13px;
+  padding: 10px 4px 4px;
+  text-shadow: 0 1px 6px rgba(11,11,12,.95);
+}
+
+.presentation-overlay__evidence .evidence-card__controls {
+  min-height: 44px;
+}
+
+.presentation-overlay__evidence .evidence-card__controls button {
+  min-width: 46px;
+  font-size: 24px;
+}
+
 /* Mobile chronology: a quiet collapsed rail that expands into context or the full index. */
 .mobile-timeline { display: none; }
 
@@ -269,8 +364,26 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
   .recap__panel { padding: 20px 18px; }
   .controls { width: max-content; bottom: 52px; gap: 10px; }
   .mode-btn { padding: 8px 13px; }
-  .narration-caption { bottom: 174px; width: calc(100vw - 32px); padding-inline: 12px; }
-  .narration-caption__text { max-height: 4.65em; font-size: 12px; }
+  .narration-caption { bottom: 174px; width: calc(100vw - 32px); padding-inline: 14px; }
+  .narration-caption__text { max-height: 5.4em; font-size: 15px; }
+  .presentation-overlay {
+    top: 56px;
+    transform: none;
+    left: 14px;
+    width: calc(100vw - 28px);
+    max-height: calc(100vh - 220px);
+    animation-name: presentation-fade-in-mobile;
+  }
+  @keyframes presentation-fade-in-mobile {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .presentation-overlay__title {
+    font-size: clamp(22px, 5.5vw, 30px);
+  }
+  .presentation-overlay__evidence {
+    height: min(34vh, 250px);
+  }
   .place-panel { z-index: 36; padding-top: 82px; }
   .places-nav { display: none; }
   .mobile-timeline {
