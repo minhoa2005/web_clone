@@ -6,9 +6,10 @@
     "author": "HarpyHarpHarp",
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/449/449127_8895476-hq.mp3",
-    "bytes": 156392,
+    "bytes": 96591,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "footsteps",
@@ -17,9 +18,10 @@
     "author": "MalikArsYasakani",
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/849/849769_16860678-hq.mp3",
-    "bytes": 46591,
+    "bytes": 41838,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "crowd",
@@ -39,9 +41,10 @@
     "author": "YleArkisto",
     "license": "CC BY 4.0",
     "url": "https://cdn.freesound.org/previews/342/342752_4415905-hq.mp3",
-    "bytes": 1287128,
+    "bytes": 80709,
     "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "city",
@@ -50,9 +53,10 @@
     "author": "_Evile",
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/854/854365_16878885-hq.mp3",
-    "bytes": 4008384,
+    "bytes": 257087,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "radio",
@@ -61,9 +65,10 @@
     "author": "knasterask1",
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/717/717474_15529369-hq.mp3",
-    "bytes": 75528,
+    "bytes": 80709,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "shutter",
@@ -72,9 +77,10 @@
     "author": "jdaniel1999",
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/376/376205_3123844-hq.mp3",
-    "bytes": 61152,
+    "bytes": 33061,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "harbor",
@@ -83,9 +89,10 @@
     "source": "https://freesound.org/people/clif_creates/sounds/254125/",
     "url": "https://cdn.freesound.org/previews/254/254125_3530854-hq.mp3",
     "license": "CC0",
-    "bytes": 1341504,
+    "bytes": 224905,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "forest",
@@ -94,9 +101,10 @@
     "source": "https://freesound.org/people/guidofm/sounds/509176/",
     "url": "https://cdn.freesound.org/previews/509/509176_4290180-hq.mp3",
     "license": "CC0",
-    "bytes": 476981,
+    "bytes": 257087,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "printing",
@@ -105,9 +113,10 @@
     "source": "https://freesound.org/people/kyles/sounds/405009/",
     "url": "https://cdn.freesound.org/previews/405/405009_612689-hq.mp3",
     "license": "CC0",
-    "bytes": 5489040,
+    "bytes": 160957,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "typewriter",
@@ -116,9 +125,10 @@
     "source": "https://freesound.org/people/_stubb/sounds/406241/",
     "url": "https://cdn.freesound.org/previews/406/406241_6068748-hq.mp3",
     "license": "CC0",
-    "bytes": 348816,
+    "bytes": 129192,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+    "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades."
   },
   {
     "name": "diesel",
@@ -128,7 +138,9 @@
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/395/395586_4298084-lq.mp3",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Short, quiet engine-start reconstruction for the 1950 border-campaign scene; never an authentic campaign recording."
+    "usage": "Short, quiet engine-start reconstruction for the 1950 border-campaign scene; never an authentic campaign recording.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 128356
   },
   {
     "name": "wheel-creak",
@@ -138,6 +150,68 @@
     "license": "CC0",
     "url": "https://cdn.freesound.org/previews/438/438350_2524442-lq.mp3",
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "usage": "Short wooden pulley and cart creak reconstruction for harbor rigging and artillery-hauling scenes; never an authentic historical recording."
+    "usage": "Short wooden pulley and cart creak reconstruction for harbor rigging and artillery-hauling scenes; never an authentic historical recording.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 129192
+  },
+  {
+    "name": "ship-horn",
+    "file": "ship-horn.audio",
+    "author": "monotraum",
+    "source": "https://freesound.org/people/monotraum/sounds/208714/",
+    "url": "https://cdn.freesound.org/previews/208/208714_1756543-hq.mp3",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Modern recording used as reconstructed sound design, not historical event audio. Trimmed to an audible action, filtered, loudness normalized, and faded.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 97009
+  },
+  {
+    "name": "ship-engine",
+    "file": "ship-engine.audio",
+    "author": "monotraum",
+    "source": "https://freesound.org/people/monotraum/sounds/253606/",
+    "url": "https://cdn.freesound.org/previews/253/253606_1756543-hq.mp3",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Modern recording used as reconstructed sound design, not historical event audio. Trimmed to an audible action, filtered, loudness normalized, and faded.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 192722
+  },
+  {
+    "name": "gavel",
+    "file": "gavel.audio",
+    "author": "TurtleLG",
+    "source": "https://freesound.org/people/TurtleLG/sounds/80448/",
+    "url": "https://cdn.freesound.org/previews/80/80448_914292-hq.mp3",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Modern recording used as reconstructed sound design, not historical event audio. Trimmed to an audible action, filtered, loudness normalized, and faded.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 48108
+  },
+  {
+    "name": "mechanical-type",
+    "file": "mechanical-type.audio",
+    "author": "CallFlan",
+    "source": "https://freesound.org/people/CallFlan/sounds/761351/",
+    "url": "https://cdn.freesound.org/previews/761/761351_10683427-hq.mp3",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Modern recording used as reconstructed sound design, not historical event audio. Trimmed to an audible action, filtered, loudness normalized, and faded.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 22194
+  },
+  {
+    "name": "applause",
+    "file": "applause.audio",
+    "author": "lchapman1980",
+    "source": "https://freesound.org/people/lchapman1980/sounds/439894/",
+    "url": "https://cdn.freesound.org/previews/439/439894_2896196-hq.mp3",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Modern recording used as reconstructed sound design, not historical event audio. Trimmed to an audible action, filtered, loudness normalized, and faded.",
+    "processing": "Selected active excerpt; high/low pass filtering; -18 LUFS target, -2 dB true peak ceiling; gentle edge fades.",
+    "bytes": 97009
   }
 ]

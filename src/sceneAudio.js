@@ -33,42 +33,42 @@ export function fadeAudio(audio, target, duration = 600, complete) {
   }, 25);
   fades.set(audio, timer);
 }
-const layer = (name, at, volume, seconds, loop = true, fadeIn = 900) => ({ name, at, volume, seconds, loop, fadeIn });
+// Action sounds play once; only sustained environment beds loop.
+const layer = (name, at, volume, seconds, loop = false, fadeIn = 120) => ({ name, at, volume: volume * .55, seconds, loop, fadeIn });
 const SCENES = {
-  harbor: [layer('harbor', 0, .16, 22), layer('wheel-creak', 5, .075, 8, false, 180)],
-  paper: [layer('paper', 0, .13, 7), layer('typewriter', 6, .11, 12)],
-  assembly: [layer('crowd', 0, .09, 14), layer('paper', 9, .12, 7)],
-  radio: [layer('radio', 0, .09, 10)],
-  printing: [layer('printing', 0, .15, 18), layer('paper', 12, .12, 7)],
-  classroom: [layer('chalk', 0, .12, 10), layer('paper', 10, .12, 7)],
-  crowd: [layer('crowd', 0, .12, 20)],
-  forest: [layer('forest', 0, .16, 22), layer('footsteps', 5, .13, 9)],
-  'forest-radio': [layer('forest', 0, .14, 22), layer('radio', 12, .09, 7)],
-  'crowd-rise': [layer('crowd', 0, .09, 10)],
-  'border-campaign': [layer('forest', 0, .12, 24), layer('footsteps', 2, .12, 11), layer('diesel', 5, .11, 8, false, 180), layer('radio', 14, .075, 5)],
+  harbor: [layer('harbor', 0, .2, 18, true, 600), layer('ship-horn', .15, .5, 6), layer('ship-engine', 2, .3, 12), layer('wheel-creak', 9, .32, 5)],
+  paper: [layer('paper', 0, .42, 5), layer('mechanical-type', 2, .4, 1.4), layer('typewriter', 5, .32, 8)],
+  assembly: [layer('gavel', 0, .44, 3), layer('crowd', 1, .16, 12, true, 600), layer('paper', 5, .34, 5)],
+  radio: [layer('radio', 0, .42, 5)],
+  printing: [layer('printing', 0, .4, 10), layer('paper', 9, .36, 5)],
+  classroom: [layer('chalk', 0, .44, 5), layer('paper', 5, .38, 5)],
+  crowd: [layer('crowd', 0, .26, 15, true, 500), layer('applause', 8, .34, 6)],
+  forest: [layer('forest', 0, .25, 17, true, 700), layer('footsteps', 1, .42, 8, true)],
+  'forest-radio': [layer('forest', 0, .22, 17, true, 700), layer('footsteps', 1, .34, 6, true), layer('radio', 9, .38, 5)],
+  'crowd-rise': [layer('crowd', 0, .23, 10, true, 500), layer('applause', 5, .3, 5)],
+  'border-campaign': [layer('forest', 0, .18, 18, true, 600), layer('diesel', 0, .44, 8), layer('footsteps', 5, .38, 8, true), layer('radio', 12, .38, 5)],
   silence: [],
-  diplomacy: [layer('crowd', 0, .07, 9), layer('paper', 6, .14, 8), layer('shutter', 15, .11, 3)],
-  shortwave: [layer('radio', 0, .13, 13)],
-  'artillery-haul': [layer('footsteps', 0, .1, 17), layer('wheel-creak', 1.4, .11, 9, false, 180)],
-  'tet-radio': [layer('city', 0, .11, 7), layer('radio', 7, .12, 5)],
+  diplomacy: [layer('paper', 0, .4, 5), layer('shutter', 3, .42, 2), layer('crowd', 1, .14, 12, true, 700), layer('shutter', 9, .38, 2)],
+  shortwave: [layer('radio', 0, .44, 5), layer('mechanical-type', 6, .38, 1.4)],
+  'artillery-haul': [layer('wheel-creak', 0, .42, 8), layer('footsteps', 3, .36, 8, true)],
+  'tet-radio': [layer('city', 0, .3, 7), layer('radio', 6, .44, 5)],
   'victory-rise': [],
-  ceremony: [layer('crowd', 0, .08, 9), layer('paper', 8, .11, 6)],
-  field: [layer('forest', 0, .12, 20), layer('footsteps', 5, .1, 8)],
-  'market-rise': [layer('typewriter', 0, .12, 7), layer('city', 7, .15, 18)],
-  global: [layer('crowd', 0, .1, 18), layer('shutter', 10, .1, 3)],
-  'city-rise': [layer('city', 0, .17, 24)],
+  ceremony: [layer('paper', 0, .36, 5), layer('applause', 7, .36, 6)],
+  field: [layer('forest', 0, .22, 17, true, 700), layer('footsteps', 2, .4, 8, true)],
+  'market-rise': [layer('typewriter', 0, .38, 7), layer('city', 6, .32, 16)],
+  global: [layer('crowd', 0, .16, 14, true, 600), layer('shutter', 1, .42, 2), layer('applause', 7, .34, 6)],
+  'city-rise': [layer('city', 0, .32, 16)],
 };
 export function startPresentationSoundscape(profileName) {
   const players = [];
   const timers = [];
   let stopped = false;
   for (const item of SCENES[profileName] || []) {
+    const sourcePromise = getAudioSource(`${import.meta.env.BASE_URL}audio/scenes/${item.name}.audio`).catch(() => null);
     timers.push(setTimeout(async () => {
       if (stopped) return;
-      let source;
-      try { source = await getAudioSource(`${import.meta.env.BASE_URL}audio/scenes/${item.name}.audio`); }
-      catch { return; }
-      if (stopped) return;
+      const source = await sourcePromise;
+      if (stopped || !source) return;
       const audio = new Audio(source);
       audio.volume = 0;
       audio.loop = item.loop;
