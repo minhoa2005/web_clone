@@ -105,7 +105,7 @@ function GlobeStage({ mode, selected, focusedLocationId, focusRevision, onPick, 
       .globeImageUrl(`${import.meta.env.BASE_URL}assets/earth-dark.jpg`)
       .bumpImageUrl(`${import.meta.env.BASE_URL}assets/earth-topology.png`)
       .showAtmosphere(true)
-      .atmosphereColor('#e6402e')
+      .atmosphereColor('#d6b35a')
       .atmosphereAltitude(0.13)
       .htmlLat('lat')
       .htmlLng('lng')
@@ -347,7 +347,9 @@ export default function App() {
   const narrationSyncRef = useRef(null);
   const location = eventLocation(selected, focusedLocationId);
   const evidence = selected ? eventEvidence(selected) : null;
-  const showEvidence = Boolean(evidence?.kind === 'page' && experience.ready);
+  const selectedEventIndex = EVENTS.findIndex((event) => event.id === selected?.id);
+  const evidenceNarrationState = tourIndex === selectedEventIndex ? tourStatus : 'idle';
+  const showEvidence = Boolean(evidence?.illustration?.photos?.length && experience.ready);
   const list = LISTS[mode];
   const groupedPlaces = useMemo(() => groupPlaces(list), [list]);
 
@@ -777,7 +779,7 @@ export default function App() {
       />
 
       <div className={`evidence-dock${showEvidence ? ' is-filled' : ''}`} ref={evidenceDockRef}>
-        {showEvidence && <EvidenceCard evidence={evidence} />}
+        {showEvidence && <EvidenceCard evidence={evidence} eventId={selected.id} narrationState={evidenceNarrationState} audioRef={audioRef} />}
       </div>
       <GlobeStage
         mode={mode}
@@ -849,10 +851,10 @@ export default function App() {
       >
         <button className="place-panel__close" aria-label="Đóng chi tiết sự kiện" onClick={closePlace}>×</button>
         {selected && <>
-          <p className="place-panel__country">{selected.date} · {location?.country || selected.country}</p>
+          <p className="place-panel__country"><span className="place-panel__date">{selected.date}</span> · {location?.country || selected.country}</p>
           <h2 id="place-panel-title">{selected.city}</h2>
           {showEvidence && <div className="place-panel__evidence">
-            <EvidenceCard evidence={evidence} variant="inline" />
+            <EvidenceCard evidence={evidence} eventId={selected.id} narrationState={evidenceNarrationState} audioRef={audioRef} variant="inline" />
           </div>}
           <p className="place-panel__label">Sự kiện</p>
           <p className="place-panel__note">{selected.note}</p>

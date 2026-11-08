@@ -1,5 +1,6 @@
 // Danh mục cấu hình hình ảnh sự kiện / minh hoạ cho từng phần thuyết minh lịch sử.
 // Khớp 100% với 36 sự kiện trong src/history.js và các tệp âm thanh public/audio/<id>.mp3.
+import { EVENT_PHOTO_GALLERIES } from './eventPhotoGalleries.js';
 
 export const SUPPORTED_EXTENSIONS = Object.freeze(['webp', 'jpg', 'jpeg', 'png']);
 
@@ -387,6 +388,7 @@ export function getEventIllustration(eventId) {
   return {
     ...item,
     candidates: getCandidateImageUrls(eventId),
+    photos: EVENT_PHOTO_GALLERIES[eventId] || [{ src: item.src, caption: item.caption, sourceTitle: item.title }],
     supportedExtensions: SUPPORTED_EXTENSIONS,
   };
 }

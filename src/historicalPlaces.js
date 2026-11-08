@@ -53,7 +53,7 @@ export function eventEvidence(event) {
   if (event?.external?.url) {
     return { kind: 'external', title: event.external.title, url: event.external.url, illustration };
   }
-  return null;
+  return illustration?.src ? { kind: 'illustration', title: illustration.title, illustration } : null;
 }
 
 export function eventLocation(event, locationId) {

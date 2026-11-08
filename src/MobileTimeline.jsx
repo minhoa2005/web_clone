@@ -65,7 +65,7 @@ export default function MobileTimeline({ groupedPlaces, list, selected, onSelect
     {state === TIMELINE_STATE.full && <div className="mobile-timeline__list">
       {groupedPlaces.map(([region, years]) => <section className="mobile-timeline__chapter" key={region}>
         <h2>{region}</h2>
-        {[...years.entries()].map(([year, events]) => <div className="mobile-timeline__year" key={year}>
+        {[...years.entries()].map(([year, events]) => <div className={`mobile-timeline__year${events.some((event) => current?.id === event.id) ? ' is-active' : ''}`} key={year}>
           <p>{year}</p>
           {events.map((event) => <button
             type="button"

@@ -119,6 +119,66 @@ function sourceCard(ribbon, itemId) {
   })[0] || null;
 }
 
+function startBeltSpeedBurst(belt) {
+  const animation = belt?.getAnimations?.().find((item) => item.animationName === 'image-field-travel');
+  if (!animation) return null;
+
+  const originalRate = animation.playbackRate;
+  const peakRate = Math.max(originalRate, MOTION.evidenceBeltPeakRate);
+  let phase = 'accelerating';
+  let phaseStartRate = originalRate;
+  let startedAt = performance.now();
+  let fallbackTimer = 0;
+  let frame = 0;
+  let currentRate = originalRate;
+  let stopped = false;
+  const setRate = (rate) => {
+    currentRate = rate;
+    if (typeof animation.updatePlaybackRate === 'function') animation.updatePlaybackRate(rate);
+    else animation.playbackRate = rate;
+  };
+  const tick = (now) => {
+    const duration = phase === 'accelerating' ? MOTION.evidenceBeltRampUp : MOTION.evidenceBeltSettle;
+    const progress = clamp((now - startedAt) / duration, 0, 1);
+    const eased = phase === 'accelerating' ? progress * progress * (3 - 2 * progress) : progress * (2 - progress);
+    const targetRate = phase === 'accelerating' ? peakRate : originalRate;
+    setRate(phaseStartRate + (targetRate - phaseStartRate) * eased);
+    if (progress >= 1) {
+      if (phase === 'accelerating') {
+        phase = 'holding';
+        setRate(peakRate);
+      } else {
+        stopped = true;
+        setRate(originalRate);
+      }
+      return;
+    }
+    frame = window.requestAnimationFrame(tick);
+  };
+  frame = window.requestAnimationFrame(tick);
+  const release = () => {
+    if (stopped || phase === 'settling') return;
+    window.clearTimeout(fallbackTimer);
+    window.cancelAnimationFrame(frame);
+    phase = 'settling';
+    phaseStartRate = currentRate;
+    startedAt = performance.now();
+    frame = window.requestAnimationFrame(tick);
+  };
+  fallbackTimer = window.setTimeout(release, MOTION.evidenceBeltMaxHold);
+
+  return {
+    release,
+    cancel: () => {
+      if (stopped) return;
+      stopped = true;
+      window.clearTimeout(fallbackTimer);
+      window.cancelAnimationFrame(frame);
+      setRate(originalRate);
+    },
+  };
+}
+
 export default function EventImageField({ list, selected, focusRevision, focusReadyRevision, promotionCancelled, docked, dockRef, onPromotionComplete }) {
   const pool = useMemo(() => buildPool(list), [list]);
   const activeItem = selectedItemFor(pool, selected);
@@ -126,8 +186,10 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
   const ribbonRef = useRef(null);
   const focusRef = useRef(null);
   const animationRef = useRef(null);
+  const beltBurstRef = useRef(null);
   const sequenceRef = useRef(0);
   const [focusImage, setFocusImage] = useState(null);
+  const [departedSource, setDepartedSource] = useState(null);
   const [phase, setPhase] = useState(selected ? 'focused' : 'idle');
 
   const maxItems = typeof window !== 'undefined' && window.innerWidth <= 760 ? MAX_MOBILE_ITEMS : MAX_DESKTOP_ITEMS;
@@ -137,6 +199,7 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     animationRef.current?.cancel?.();
     sequenceRef.current += 1;
     setFocusImage(null);
+    setDepartedSource(null);
     setPhase(activeItem ? 'waiting' : 'idle');
   }, [activeItemId, focusRevision]);
 
@@ -147,8 +210,20 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     animationRef.current?.cancel?.();
     animationRef.current = null;
     setFocusImage(null);
+    setDepartedSource(null);
     setPhase('idle');
   }, [promotionCancelled]);
+
+  useLayoutEffect(() => {
+    if (!activeItem || promotionCancelled || focusRevision <= 0 || window.innerWidth <= 760 || prefersReducedMotion()) return undefined;
+    const burst = startBeltSpeedBurst(ribbonRef.current?.querySelector('.image-field__belt'));
+    if (!burst) return undefined;
+    beltBurstRef.current = burst;
+    return () => {
+      burst.cancel();
+      if (beltBurstRef.current === burst) beltBurstRef.current = null;
+    };
+  }, [activeItemId, focusRevision, promotionCancelled]);
 
   useLayoutEffect(() => {
     if (!activeItem || promotionCancelled || focusReadyRevision !== focusRevision || focusRevision <= 0) return;
@@ -157,22 +232,32 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
       onPromotionComplete?.(focusRevision);
       return;
     }
-    const source = sourceCard(ribbonRef.current, activeItem.id);
-    const sourceRect = source?.getBoundingClientRect();
-    const target = dockTarget(dockRef?.current, activeItem.aspect) || targetCenter(activeItem.aspect);
-    const safeRect = sourceRect?.width > 0 ? {
-      x: sourceRect.x,
-      y: sourceRect.y,
-      width: sourceRect.width,
-      height: sourceRect.height,
-    } : {
-      x: -target.width * 0.4,
-      y: target.y - target.width * 0.3,
-      width: target.width * 0.44,
-      height: target.width * 0.44 / activeItem.aspect,
+    const promoteSelectedCard = () => {
+      beltBurstRef.current?.release();
+      const source = sourceCard(ribbonRef.current, activeItem.id);
+      const sourceRect = source?.getBoundingClientRect();
+      const target = dockTarget(dockRef?.current, activeItem.aspect) || targetCenter(activeItem.aspect);
+      const safeRect = sourceRect?.width > 0 ? {
+        x: sourceRect.x,
+        y: sourceRect.y,
+        width: sourceRect.width,
+        height: sourceRect.height,
+      } : {
+        x: -target.width * 0.4,
+        y: target.y - target.width * 0.3,
+        width: target.width * 0.44,
+        height: target.width * 0.44 / activeItem.aspect,
+      };
+      setFocusImage({ item: activeItem, sourceRect: safeRect, sourceCopy: source?.dataset.imageCopy || null, target, sequence: sequenceRef.current });
+      setPhase('promoting');
     };
-    setFocusImage({ item: activeItem, sourceRect: safeRect, target, sequence: sequenceRef.current });
-    setPhase('promoting');
+
+    if (prefersReducedMotion()) {
+      promoteSelectedCard();
+      return undefined;
+    }
+    const timer = window.setTimeout(promoteSelectedCard, MOTION.evidenceBeltLead);
+    return () => window.clearTimeout(timer);
   }, [activeItem, dockRef, focusReadyRevision, focusRevision, onPromotionComplete, promotionCancelled]);
 
   // Hand the landed page to the docked evidence card once reading begins.
@@ -197,6 +282,8 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     const targetScale = target.width / sourceRect.width;
     const deltaX = target.x - (sourceRect.x + sourceRect.width / 2);
     const deltaY = target.y - (sourceRect.y + sourceRect.height / 2);
+    const launchDistance = clamp(sourceRect.width * 0.42, 30, 64);
+    const turnX = deltaX * 0.54 - launchDistance * 0.18;
     const finalTransform = `translate3d(${deltaX}px, ${deltaY}px, 0) rotate(0deg) scale(${targetScale})`;
     const finish = () => {
       if (sequenceRef.current !== sequence) return;
@@ -205,6 +292,9 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
         focusRef.current.style.opacity = '1';
         focusRef.current.style.filter = 'grayscale(0) contrast(1.04) brightness(1)';
         focusRef.current.style.clipPath = 'inset(0 0 0 0)';
+      }
+      if (!reducedMotion && focusImage.sourceCopy) {
+        setDepartedSource({ id: focusImage.item.id, copy: focusImage.sourceCopy });
       }
       animationRef.current = null;
       setPhase('focused');
@@ -220,7 +310,8 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
 
     const animation = focusRef.current.animate([
       { transform: 'translate3d(0,0,0) rotate(-3deg) scale(1)', opacity: 0.18, filter: 'grayscale(.7) contrast(.92) brightness(.7)', clipPath: 'inset(5% 7% 5% 7%)' },
-      { transform: `translate3d(${deltaX * 0.54}px, ${deltaY * 0.3 - 54}px, 0) rotate(-1deg) scale(${targetScale * 0.76})`, opacity: 0.9, filter: 'grayscale(.18) contrast(1) brightness(.88)', clipPath: 'inset(1% 2% 1% 2%)', offset: 0.56 },
+      { transform: `translate3d(${-launchDistance}px, -10px, 0) rotate(-5deg) scale(1.06)`, opacity: 0.86, filter: 'grayscale(.26) contrast(1) brightness(.86)', clipPath: 'inset(3% 4% 3% 4%)', offset: 0.22 },
+      { transform: `translate3d(${turnX}px, ${deltaY * 0.3 - 54}px, 0) rotate(-1deg) scale(${targetScale * 0.76})`, opacity: 0.9, filter: 'grayscale(.18) contrast(1) brightness(.88)', clipPath: 'inset(1% 2% 1% 2%)', offset: 0.56 },
       { transform: finalTransform, opacity: 1, filter: 'grayscale(0) contrast(1.04) brightness(1)', clipPath: 'inset(0 0 0 0)' },
     ], { duration: MOTION.evidenceFlight, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' });
     animationRef.current = animation;
@@ -254,8 +345,9 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
 
   const sequence = (copy) => <div className="image-field__sequence" aria-hidden="true" key={copy}>
     {renderItems.map((item, index) => <figure
-      className={`image-field__card${item.id === activeItemId ? ' image-field__card--selected' : ''}`}
+      className={`image-field__card${item.id === activeItemId ? ' image-field__card--selected' : ''}${phase === 'promoting' && focusImage?.item.id === item.id && focusImage.sourceCopy === copy ? ' image-field__card--departing' : ''}${departedSource?.id === item.id && departedSource.copy === copy ? ' image-field__card--departed' : ''}`}
       data-image-id={item.id}
+      data-image-copy={copy}
       key={`${copy}-${item.id}`}
       style={cardStyle(index, item)}
     >

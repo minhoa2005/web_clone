@@ -2,6 +2,11 @@
 export const MOTION = Object.freeze({
   evidenceFlight: 820,
   evidenceHandoff: 180,
+  evidenceBeltLead: 210,
+  evidenceBeltRampUp: 320,
+  evidenceBeltSettle: 640,
+  evidenceBeltMaxHold: 2800,
+  evidenceBeltPeakRate: 6.2,
 });
 
 const PARAM = 'motion';
@@ -18,10 +23,12 @@ function readOverride() {
   return null;
 }
 
+// Motion is the site default. Only an explicit `?motion=reduce` (or `#motion=reduce`)
+// asks for the reduced path; the operating system's prefers-reduced-motion setting is
+// deliberately not consulted, so the globe, evidence flight and narration behave the
+// same in every browser profile.
 export function prefersReducedMotion() {
-  const override = readOverride();
-  if (override !== null) return override;
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return readOverride() === true;
 }
 
 export function reducedMotionQuery() {
@@ -30,10 +37,7 @@ export function reducedMotionQuery() {
 
 export function syncMotionPreference() {
   if (typeof document === 'undefined') return;
-  const override = readOverride();
-  if (override === false) document.documentElement.dataset.motion = 'full';
-  else if (override === true) document.documentElement.dataset.motion = 'reduce';
-  else delete document.documentElement.dataset.motion;
+  document.documentElement.dataset.motion = prefersReducedMotion() ? 'reduce' : 'full';
 }
 
 if (typeof window !== 'undefined') {

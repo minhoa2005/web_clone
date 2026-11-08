@@ -1,6 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
+import './fonts.css';
+// Applies the motion mode at startup; full motion is the default.
+import './motion.js';
 
 // Development-only studies page. Guarded by import.meta.env.DEV so the production
 // build drops it (and its stylesheet) entirely.
