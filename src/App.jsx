@@ -811,7 +811,6 @@ export default function App() {
       </div>
 
       {narrationText && ['playing', 'paused'].includes(tourStatus) && <section className="narration-caption" aria-label="Lời thuyết minh">
-        <p className="narration-caption__label">{tourStatus === 'paused' ? 'Đã tạm dừng' : 'Thuyết minh'}</p>
         <p className="narration-caption__text" aria-hidden="true">{narrationText}<span className="narration-caption__cursor" /></p>
         <span className="sr-only" aria-live="polite">{getNarration(EVENTS[tourIndex]?.id)}</span>
       </section>}

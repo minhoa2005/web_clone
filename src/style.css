@@ -131,7 +131,6 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
   background: linear-gradient(180deg, rgba(11,11,12,.08), rgba(11,11,12,.78));
   text-align: center; pointer-events: none; animation: narration-in .35s ease both; transition: left .7s cubic-bezier(.16,1,.3,1);
 }
-.narration-caption__label { margin: 0 0 6px; color: var(--vermilion); font-size: 9px; letter-spacing: .24em; text-transform: uppercase; }
 .narration-caption__text { max-height: 4.7em; overflow: hidden; margin: 0; color: var(--bone); font-size: clamp(12px, 1.2vw, 15px); line-height: 1.55; }
 .narration-caption__cursor { display: inline-block; width: 1px; height: 1em; margin-left: 5px; vertical-align: -.12em; background: var(--vermilion); animation: narration-cursor 1s steps(1,end) infinite; }
 @keyframes narration-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
