@@ -16,19 +16,42 @@ function buildPool(list) {
   const seen = new Set();
   const items = [];
   list.forEach((event) => {
-    (event.photos || []).forEach((photo, photoIndex) => {
-      const eventImageKey = `${event.id}::${photo?.src}`;
-      if (!photo?.src || seen.has(eventImageKey)) return;
-      seen.add(eventImageKey);
-      items.push({
-        id: `${event.id}::${photo.src}`,
-        eventId: event.id,
-        src: photoUrl(photo),
-        title: photo.title || event.short,
-        label: event.short,
-        aspect: IMAGE_ASPECTS[(items.length + photoIndex) % IMAGE_ASPECTS.length],
+    const illustration = event.illustration;
+    const fallbackPhoto = (event.photos || [])[0];
+    const fallbackSrc = fallbackPhoto?.src ? photoUrl(fallbackPhoto) : '';
+
+    if (illustration?.src) {
+      const eventImageKey = `${event.id}::${illustration.src}`;
+      if (!seen.has(eventImageKey)) {
+        seen.add(eventImageKey);
+        items.push({
+          id: eventImageKey,
+          eventId: event.id,
+          src: photoUrl(illustration),
+          fallbackSrc,
+          title: illustration.title || event.short,
+          caption: illustration.caption || event.short,
+          label: event.short,
+          aspect: IMAGE_ASPECTS[items.length % IMAGE_ASPECTS.length],
+        });
+      }
+    } else {
+      (event.photos || []).forEach((photo, photoIndex) => {
+        const eventImageKey = `${event.id}::${photo?.src}`;
+        if (!photo?.src || seen.has(eventImageKey)) return;
+        seen.add(eventImageKey);
+        items.push({
+          id: `${event.id}::${photo.src}`,
+          eventId: event.id,
+          src: photoUrl(photo),
+          fallbackSrc: '',
+          title: photo.title || event.short,
+          caption: event.short,
+          label: event.short,
+          aspect: IMAGE_ASPECTS[(items.length + photoIndex) % IMAGE_ASPECTS.length],
+        });
       });
-    });
+    }
   });
   return items;
 }
@@ -213,6 +236,13 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     aspectRatio: focusImage.item.aspect,
   } : undefined;
 
+  const handleImageFallback = (e, fallbackSrc) => {
+    if (fallbackSrc && e.currentTarget.dataset.fallbackTried !== 'true') {
+      e.currentTarget.dataset.fallbackTried = 'true';
+      e.currentTarget.src = fallbackSrc;
+    }
+  };
+
   const sequence = (copy) => <div className="image-field__sequence" aria-hidden="true" key={copy}>
     {renderItems.map((item, index) => <figure
       className={`image-field__card${item.id === activeItemId ? ' image-field__card--selected' : ''}`}
@@ -220,7 +250,16 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
       key={`${copy}-${item.id}`}
       style={cardStyle(index, item)}
     >
-      <img src={item.src} alt="" draggable="false" loading={copy === 'a' && index < 2 ? 'eager' : 'lazy'} fetchPriority={copy === 'a' && index < 2 ? 'high' : 'low'} decoding="async" />
+      <img
+        src={item.src}
+        alt={item.title || ''}
+        title={item.title || item.label}
+        draggable="false"
+        loading={copy === 'a' && index < 2 ? 'eager' : 'lazy'}
+        fetchPriority={copy === 'a' && index < 2 ? 'high' : 'low'}
+        decoding="async"
+        onError={(e) => handleImageFallback(e, item.fallbackSrc)}
+      />
     </figure>)}
   </div>;
 
@@ -233,8 +272,14 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     {focusImage && <div className={`image-field__veil image-field__veil--${phase}`} aria-hidden="true" />}
     {focusImage && <div className={`image-field__focus image-field__focus--${phase}`} aria-hidden="true">
       <figure className="image-field__focus-card" ref={focusRef} style={focusStyle}>
-        <img src={focusImage.item.src} alt="" draggable="false" decoding="async" />
-        <figcaption>{focusImage.item.label}</figcaption>
+        <img
+          src={focusImage.item.src}
+          alt={focusImage.item.title || focusImage.item.label || ''}
+          draggable="false"
+          decoding="async"
+          onError={(e) => handleImageFallback(e, focusImage.item.fallbackSrc)}
+        />
+        <figcaption>{focusImage.item.caption || focusImage.item.label}</figcaption>
       </figure>
     </div>}
   </>;
