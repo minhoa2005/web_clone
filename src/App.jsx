@@ -6,6 +6,8 @@ import vietnamArchipelagos from './vietnamArchipelagos.js';
 import { PLACES, WISHLIST, REGION_ORDER, historicalPins, historicalArcs, highlightedCountries, eventLocation, eventEvidence } from './historicalPlaces.js';
 import { EVENTS, readEventHash } from './history.js';
 import { getNarration } from './narration.js';
+import { getPresentationAudioCue } from './presentationAudio.js';
+import { startPresentationSoundscape, fadeAudio, liftMusic, getAudioSource, musicStartTime } from './sceneAudio.js';
 import { prefersReducedMotion } from './motion.js';
 import { createExperience, displayPhase, evidenceDocked, globeArrived, restoreEvent, selectEvent, skipTransition as skipPhase } from './experience.js';
 import EventImageField from './EventImageField.jsx';
@@ -321,6 +323,8 @@ export default function App() {
   const [tourStatus, setTourStatus] = useState('idle');
   const [tourIndex, setTourIndex] = useState(-1);
   const [tourError, setTourError] = useState('');
+  const [presentationSoundEnabled, setPresentationSoundEnabled] = useState(true);
+  const [presentationAudioPhase, setPresentationAudioPhase] = useState('idle');
   const [focusReadyRevision, setFocusReadyRevision] = useState(-1);
   const [experience, setExperience] = useState(() => initialPlace
     ? restoreEvent({ eventId: initialPlace.id, revision: 0, hasEvidence: Boolean(initialPlace.photos?.length) })
@@ -343,6 +347,7 @@ export default function App() {
   const tourPhaseRef = useRef('idle');
   const tourLocationRef = useRef(null);
   const audioRef = useRef(null);
+  const archiveAudioRef = useRef(null);
   const playStepRef = useRef(null);
   const [narrationText, setNarrationText] = useState('');
   const narrationTimingRef = useRef([]);
@@ -418,13 +423,20 @@ export default function App() {
   }, [clearNarrationSync, syncNarration]);
   const cancelAudio = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
     clearNarrationSync();
-    audio.onended = null;
-    audio.onerror = null;
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
+    if (audio) {
+      audio.onended = null;
+      audio.onerror = null;
+      audio.ontimeupdate = null;
+      fadeAudio(audio, 0, 350, () => audio.pause());
+    }
+    const archiveAudio = archiveAudioRef.current;
+    if (archiveAudio) {
+      archiveAudio.onended = null;
+      archiveAudio.onerror = null;
+      archiveAudio.ontimeupdate = null;
+      fadeAudio(archiveAudio, 0, 500, () => archiveAudio.pause());
+    }
   }, [clearNarrationSync]);
 
   const choosePlace = useCallback((place, locationId) => {
@@ -459,6 +471,7 @@ export default function App() {
       tourPhaseRef.current = 'complete';
       updateTourIndex(EVENTS.length - 1);
       updateTourStatus('complete');
+        setPresentationAudioPhase('idle');
       cancelAudio();
       return;
     }
@@ -466,6 +479,7 @@ export default function App() {
     if (!place) return;
     const focus = eventLocation(place, locationId);
     updateTourIndex(index);
+    setPresentationAudioPhase('narration');
     tourLocationRef.current = focus?.id || null;
     setTourError('');
     choosePlace(place, focus?.id || null);
@@ -474,7 +488,7 @@ export default function App() {
     const reducedMotion = prefersReducedMotion();
     const cameraDelay = focus ? (reducedMotion ? 100 : 1750) : 100;
 
-    tourTimerRef.current = window.setTimeout(() => {
+    tourTimerRef.current = window.setTimeout(async () => {
       if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
 
       const audio = audioRef.current;
@@ -487,35 +501,152 @@ export default function App() {
 
       tourPhaseRef.current = 'playing';
 
+      const cue = getPresentationAudioCue(place.id);
+      let musicStart = 0;
+      let featureSource = '';
       let settled = false;
+      let stepFinished = false;
       const handleAudioError = (errorMsg) => {
         if (token !== tourTokenRef.current || settled) return;
         settled = true;
         cancelAudio();
         tourPhaseRef.current = 'idle';
         updateTourStatus('idle');
+        setPresentationAudioPhase('idle');
         setTourError(errorMsg || `Không thể phát bản thuyết minh cho “${place.short}”. Hãy thử lại hoặc chuyển sang sự kiện tiếp theo.`);
       };
 
-      audio.onended = () => {
-        if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing' || settled) return;
-        settled = true;
-        clearNarrationSync();
-        audio.onended = null;
-        audio.onerror = null;
+      const finishStep = () => {
+        if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing' || stepFinished) return;
+        stepFinished = true;
+        const archiveAudio = archiveAudioRef.current;
+        if (archiveAudio) {
+          archiveAudio.onended = null;
+          archiveAudio.onerror = null;
+          archiveAudio.ontimeupdate = null;
+        }
         tourPhaseRef.current = 'gap';
+        setPresentationAudioPhase('gap');
         tourTimerRef.current = window.setTimeout(() => {
           if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') return;
           playStepRef.current?.(index + 1, token);
         }, 700);
       };
 
+      const playPostNarrationAudio = () => {
+        const archiveAudio = archiveAudioRef.current;
+        const postNarration = cue.afterNarration;
+        if (!postNarration || !archiveAudio) {
+          finishStep();
+          return;
+        }
+        tourPhaseRef.current = 'archive';
+        setPresentationAudioPhase('archive');
+        const continuingMusic = postNarration.kind === 'song' && archiveAudio.src === featureSource;
+        if (continuingMusic) liftMusic(archiveAudio);
+        if (!continuingMusic) {
+          fadeAudio(archiveAudio, 0, 0);
+          archiveAudio.src = featureSource;
+          archiveAudio.currentTime = 0;
+          fadeAudio(archiveAudio, 1, 150);
+        }
+        archiveAudio.playbackRate = 1;
+        archiveAudio.onended = finishStep;
+        archiveAudio.onerror = () => {
+          if (token !== tourTokenRef.current || stepFinished) return;
+          setTourError('Không thể phát tư liệu lưu trữ; dòng thời gian sẽ tiếp tục.');
+          finishStep();
+        };
+        archiveAudio.ontimeupdate = () => {
+          if (postNarration.kind === 'speech') return;
+          const remaining = postNarration.end - archiveAudio.currentTime;
+          if (remaining < 1.5) archiveAudio.volume = Math.max(0, remaining / 1.5) * (postNarration.kind === 'song' ? .75 : 1);
+          if (remaining <= 0) {
+            archiveAudio.pause();
+            finishStep();
+          }
+        };
+        const archivePromise = !continuingMusic || archiveAudio.paused ? archiveAudio.play() : undefined;
+        if (archivePromise !== undefined) {
+          archivePromise.catch(() => {
+            if (token !== tourTokenRef.current || stepFinished) return;
+            setTourError('Không thể phát tư liệu lưu trữ; dòng thời gian sẽ tiếp tục.');
+            finishStep();
+          });
+        }
+      };
+
+      audio.onended = () => {
+        if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing' || settled) return;
+        settled = true;
+        clearNarrationSync();
+        setNarrationText('');
+        audio.onended = null;
+        audio.onerror = null;
+        if (cue.afterNarration) {
+          playPostNarrationAudio();
+        }
+        else finishStep();
+      };
+
       audio.onerror = () => {
         handleAudioError(`Không thể phát bản thuyết minh cho “${place.short}”. Hãy thử lại hoặc chuyển sang sự kiện tiếp theo.`);
       };
 
-      audio.src = audioClipUrl(place.id);
-      audio.currentTime = 0;
+      // Resolve local media before starting either player so network startup cannot shift the cue.
+      const backgroundMusic = archiveAudioRef.current;
+      try {
+        const sources = await Promise.all([
+          getAudioSource(audioClipUrl(place.id)),
+          cue.afterNarration ? getAudioSource(cue.afterNarration.url) : Promise.resolve(''),
+        ]);
+        if (token !== tourTokenRef.current) return;
+        featureSource = sources[1];
+        fadeAudio(audio, 0, 0);
+        await new Promise((resolve, reject) => {
+          audio.onloadedmetadata = resolve;
+          audio.onerror = reject;
+          audio.src = sources[0];
+          audio.load();
+        });
+        audio.onloadedmetadata = null;
+        if (token !== tourTokenRef.current) return;
+        audio.onerror = () => handleAudioError();
+        audio.playbackRate = 1.15;
+        audio.preservesPitch = true;
+        audio.currentTime = 0;
+        if (cue.musicUrl && backgroundMusic) {
+          fadeAudio(backgroundMusic, 0, 0);
+          await new Promise((resolve, reject) => {
+            backgroundMusic.onloadedmetadata = resolve;
+            backgroundMusic.onerror = reject;
+            backgroundMusic.src = featureSource;
+            backgroundMusic.load();
+          });
+          backgroundMusic.onloadedmetadata = null;
+          backgroundMusic.onerror = null;
+          if (token !== tourTokenRef.current) return;
+          musicStart = musicStartTime(cue.afterNarration.climax, audio.duration, audio.playbackRate);
+          backgroundMusic.currentTime = musicStart;
+          backgroundMusic.playbackRate = 1;
+          await backgroundMusic.play();
+          fadeAudio(backgroundMusic, .13, 900);
+        }
+      } catch {
+        if (token === tourTokenRef.current) handleAudioError('Không thể tải âm thanh. Hãy thử lại.');
+        return;
+      }
+      if (token !== tourTokenRef.current || tourStatusRef.current !== 'playing') {
+        backgroundMusic?.pause();
+        return;
+      }
+      audio.ontimeupdate = () => {
+        if (cue.musicUrl && backgroundMusic && !backgroundMusic.paused) {
+          const expected = musicStart + audio.currentTime / audio.playbackRate;
+          if (Math.abs(backgroundMusic.currentTime - expected) > .35) backgroundMusic.currentTime = expected;
+        }
+      };
+      fadeAudio(audio, 1, 120);
       startNarrationSync(audio);
 
       const playPromise = audio.play();
@@ -539,6 +670,7 @@ export default function App() {
     tourLocationRef.current = null;
     updateTourIndex(-1);
     updateTourStatus('idle');
+    setPresentationAudioPhase('idle');
     setTourError('');
   }, [cancelAudio]);
 
@@ -557,8 +689,12 @@ export default function App() {
     if (tourStatusRef.current !== 'playing') return;
     updateTourStatus('paused');
     if (tourPhaseRef.current === 'playing') {
-      audioRef.current?.pause();
+      fadeAudio(audioRef.current, 0, 200, () => audioRef.current?.pause());
+      fadeAudio(archiveAudioRef.current, 0, 250, () => archiveAudioRef.current?.pause());
       clearNarrationSync();
+    } else if (tourPhaseRef.current === 'archive') {
+      clearTourTimer();
+      fadeAudio(archiveAudioRef.current, 0, 250, () => archiveAudioRef.current?.pause());
     } else {
       clearTourTimer();
     }
@@ -569,6 +705,13 @@ export default function App() {
     const audio = audioRef.current;
     if (tourPhaseRef.current === 'playing' && audio && audio.src && !audio.ended) {
       updateTourStatus('playing');
+      setPresentationAudioPhase('narration');
+      fadeAudio(audio, 1, 350);
+      const music = archiveAudioRef.current;
+      if (music?.src && getPresentationAudioCue(EVENTS[tourIndexRef.current]?.id).musicUrl) {
+        fadeAudio(music, .13, 400);
+        music.play().catch(() => {});
+      }
       startNarrationSync(audio);
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -577,6 +720,22 @@ export default function App() {
           tourPhaseRef.current = 'idle';
           updateTourStatus('idle');
           setTourError('Không thể tiếp tục phát âm thanh: ' + (err.message || 'Lỗi phát tệp.'));
+        });
+      }
+      return;
+    }
+    const archiveAudio = archiveAudioRef.current;
+    if (tourPhaseRef.current === 'archive' && archiveAudio && archiveAudio.src && !archiveAudio.ended) {
+      updateTourStatus('playing');
+      setPresentationAudioPhase('archive');
+      fadeAudio(archiveAudio, .75, 500);
+      const archivePromise = archiveAudio.play();
+      if (archivePromise !== undefined) {
+        archivePromise.catch((err) => {
+          if (tourStatusRef.current !== 'playing') return;
+          tourPhaseRef.current = 'idle';
+          updateTourStatus('idle');
+          setTourError('Không thể tiếp tục phát tư liệu: ' + (err.message || 'Lỗi phát tệp.'));
         });
       }
       return;
@@ -595,6 +754,43 @@ export default function App() {
     narrationTimingRef.current = narrationSegments(source).map((text) => ({ text, weight: narrationWeight(text) }));
     setNarrationText('');
   }, [tourIndex]);
+
+  useEffect(() => {
+    if (tourStatus !== 'playing' || !presentationSoundEnabled) return;
+    const narrationAudio = audioRef.current;
+    const cue = getPresentationAudioCue(EVENTS[tourIndex]?.id);
+    if (!narrationAudio || !cue) return;
+
+    let stopSoundscape = null;
+    const startSoundscape = () => {
+      if (stopSoundscape || narrationAudio.paused || narrationAudio.ended) return;
+      stopSoundscape = startPresentationSoundscape(cue.profile, cue.musicUrl);
+    };
+    const stop = () => {
+      stopSoundscape?.();
+      stopSoundscape = null;
+    };
+
+    startSoundscape();
+    narrationAudio.addEventListener('play', startSoundscape);
+    narrationAudio.addEventListener('pause', stop);
+    narrationAudio.addEventListener('ended', stop);
+    narrationAudio.addEventListener('error', stop);
+    return () => {
+      narrationAudio.removeEventListener('play', startSoundscape);
+      narrationAudio.removeEventListener('pause', stop);
+      narrationAudio.removeEventListener('ended', stop);
+      narrationAudio.removeEventListener('error', stop);
+      stop();
+    };
+  }, [presentationSoundEnabled, tourIndex, tourStatus]);
+
+  useEffect(() => {
+    const volume = isTourActive && !presentationSoundEnabled ? 0 : 1;
+    [audioRef.current, archiveAudioRef.current].forEach((audio) => {
+      if (audio) audio.muted = volume === 0;
+    });
+  }, [isTourActive, presentationSoundEnabled]);
 
   useEffect(() => {
     if (!['playing', 'paused'].includes(tourStatus)) {
@@ -746,6 +942,9 @@ export default function App() {
       : tourStatus === 'complete' ? 'Phát lại từ đầu' : 'Phát thuyết minh';
   const onPlayClick = tourStatus === 'playing' ? pauseTour
     : tourStatus === 'paused' ? resumeTour : startTour;
+  const togglePresentationSound = () => {
+    setPresentationSoundEnabled((enabled) => !enabled);
+  };
   const handleFocusReady = useCallback((revision) => {
     setFocusReadyRevision(revision);
     setExperience((state) => globeArrived(state, revision));
@@ -769,6 +968,11 @@ export default function App() {
   return (
     <main className={`atlas atlas--${mode}${selected ? ' atlas--has-selection' : ''}`} data-phase={displayPhase(experience, tourStatus)}>
       <audio ref={audioRef} preload="none" aria-hidden="true" />
+      <audio ref={archiveAudioRef} preload="none" aria-hidden="true" />
+      <div className="ambient-depth" aria-hidden="true" />
+      <div className="ambient-dust" aria-hidden="true">
+        <i /><i /><i /><i /><i /><i /><i /><i />
+      </div>
       <div className="grain" aria-hidden="true" />
       <EventImageField
         list={list}
@@ -802,6 +1006,7 @@ export default function App() {
                 eventId={selected.id}
                 narrationState={evidenceNarrationState}
                 audioRef={audioRef}
+                featurePlaying={presentationAudioPhase === 'archive'}
                 variant="presentation"
               />
             )}
@@ -832,6 +1037,9 @@ export default function App() {
         <button type="button" className="guided-controls__button" aria-label="Sự kiện trước" title="Sự kiện trước" onClick={() => moveTour(-1)}>‹</button>
         <button type="button" className="guided-controls__button guided-controls__play" aria-label={playLabel} title={playLabel} onClick={onPlayClick}>{tourStatus === 'playing' ? 'Ⅱ' : '▶'}</button>
         <button type="button" className="guided-controls__button" aria-label="Dừng thuyết minh" title="Dừng thuyết minh" onClick={stopTour} disabled={tourStatus === 'idle' || tourStatus === 'complete'}>■</button>
+        <button type="button" className={`guided-controls__button guided-controls__sound${presentationSoundEnabled ? ' is-on' : ''}`} aria-label={presentationSoundEnabled ? 'Tắt âm thanh thuyết trình' : 'Bật âm thanh thuyết trình'} title={presentationSoundEnabled ? 'Tắt âm thanh thuyết trình' : 'Bật âm thanh thuyết trình'} aria-pressed={presentationSoundEnabled} onClick={togglePresentationSound}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l4 3V7l-4 3H4Z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M17.5 6.5a8 8 0 0 1 0 11"/></svg>
+        </button>
         <button type="button" className="guided-controls__button" aria-label="Sự kiện tiếp theo" title="Sự kiện tiếp theo" onClick={() => moveTour(1)}>›</button>
         <span className="guided-controls__position" aria-live="polite">{tourPositionLabel}</span>
         {tourError && <span className="guided-controls__error" role="alert">{tourError}</span>}

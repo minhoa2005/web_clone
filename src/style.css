@@ -84,6 +84,27 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
 }
 .globe-host { position: absolute; inset: 0; z-index: 1; touch-action: none; }
 .globe-host canvas { display: block; outline: none; }
+.ambient-depth {
+  position: absolute; inset: -12% 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 70% 76% at 56% 48%, color-mix(in srgb, var(--gold) 11%, transparent), color-mix(in srgb, var(--gold) 5.5%, transparent) 42%, transparent 76%);
+}
+.ambient-dust { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.ambient-dust i {
+  position: absolute; display: block; width: 2px; height: 2px; border-radius: 50%;
+  background: var(--gold); opacity: .1; animation: ambient-drift 24s ease-in-out infinite alternate;
+}
+.ambient-dust i:nth-child(1) { top: 18%; left: 9%; animation-duration: 22s; }
+.ambient-dust i:nth-child(2) { top: 24%; right: 11%; animation-duration: 29s; animation-delay: -12s; }
+.ambient-dust i:nth-child(3) { top: 46%; left: 18%; animation-duration: 26s; animation-delay: -8s; }
+.ambient-dust i:nth-child(4) { top: 62%; right: 7%; animation-duration: 31s; animation-delay: -19s; }
+.ambient-dust i:nth-child(5) { bottom: 15%; left: 12%; animation-duration: 27s; animation-delay: -5s; }
+.ambient-dust i:nth-child(6) { right: 24%; bottom: 9%; animation-duration: 23s; animation-delay: -16s; }
+.ambient-dust i:nth-child(7) { top: 9%; left: 38%; animation-duration: 32s; animation-delay: -23s; }
+.ambient-dust i:nth-child(8) { right: 5%; bottom: 28%; animation-duration: 25s; animation-delay: -10s; }
+@keyframes ambient-drift {
+  from { transform: translate3d(0,0,0); opacity: .07; }
+  to { transform: translate3d(5px,-8px,0); opacity: .18; }
+}
 .grain {
   position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: .06;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
@@ -126,6 +147,9 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
 .guided-controls__button { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; padding: 0; border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--bone); cursor: pointer; font-size: 16px; line-height: 1; transition: border-color .2s, color .2s, background .2s; }
 .guided-controls__button:hover:not(:disabled), .guided-controls__play { border-color: var(--hairline); color: var(--vermilion); }
 .guided-controls__button:disabled { color: rgba(236,231,222,.28); cursor: default; }
+.guided-controls__sound { width: 38px; height: 38px; border-color: var(--hairline); }
+.guided-controls__sound.is-on { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 42%, transparent); }
+.guided-controls__sound svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .guided-controls__position { min-width: 65px; padding: 0 5px; color: var(--muted); font-size: 9px; letter-spacing: .12em; text-align: center; white-space: nowrap; }
 .guided-controls__error { position: absolute; bottom: calc(100% + 8px); left: 50%; width: max-content; max-width: 90vw; padding: 7px 11px; transform: translateX(-50%); border: 1px solid var(--hairline); border-radius: 8px; background: rgba(11,11,12,.92); color: var(--bone); font-size: 11px; letter-spacing: .02em; text-align: center; }
 .narration-caption {
@@ -350,6 +374,8 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
   z-index: 42;
   top: calc(50% - 36px);
   transform: translateY(-50%);
+  scale: 1.1;
+  transform-origin: left center;
   left: clamp(18px, 2vw, 36px);
   width: calc(38.5vw - clamp(18px, 2vw, 32px));
   min-width: 340px;
@@ -664,6 +690,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid var(--bone); outline-
 
 @media (prefers-reduced-motion: reduce) {
   html:not([data-motion='full']) *, html:not([data-motion='full']) *::before, html:not([data-motion='full']) *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  html:not([data-motion='full']) .ambient-dust i { animation: none !important; opacity: .1; }
   html:not([data-motion='full']) .image-field__card { transition-duration: .01ms; }
   html:not([data-motion='full']) .image-field__belt { animation: none; transform: translate3d(-8%,0,0); }
   html:not([data-motion='full']) .image-field__veil { transition-duration: .15s; }

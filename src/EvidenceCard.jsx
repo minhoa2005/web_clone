@@ -6,7 +6,7 @@ function pageUrl(src) {
   return `${import.meta.env.BASE_URL}${src}`;
 }
 
-export default function EvidenceCard({ evidence, eventId, narrationState = 'idle', audioRef, variant = 'dock' }) {
+export default function EvidenceCard({ evidence, eventId, narrationState = 'idle', audioRef, featurePlaying = false, variant = 'dock' }) {
   const photos = evidence?.illustration?.photos?.length
     ? evidence.illustration.photos
     : evidence?.illustration?.src
@@ -38,10 +38,18 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
     if (photos.length < 2 || manualPaused || lightboxOpen) return undefined;
 
     if (narrationState === 'playing') {
+      if (featurePlaying) {
+        const timer = window.setInterval(() => {
+          if (document.hidden) return;
+          setDirection('next');
+          setCurrentIndex((index) => (index + 1) % photos.length);
+        }, 4500);
+        return () => window.clearInterval(timer);
+      }
       const syncToNarration = () => {
         const audio = audioRef?.current;
         if (document.hidden || !audio || audio.paused || audio.ended || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
-        const nextIndex = Math.min(photos.length - 1, Math.floor((audio.currentTime / audio.duration) * photos.length));
+        const nextIndex = Math.min(photos.length - 1, Math.floor((audio.currentTime / (audio.duration * .8)) * photos.length));
         setCurrentIndex((index) => {
           if (index === nextIndex) return index;
           setDirection(nextIndex > index ? 'next' : 'prev');
@@ -59,7 +67,7 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
       setCurrentIndex((index) => (index + 1) % photos.length);
     }, 6500);
     return () => window.clearInterval(timer);
-  }, [audioRef, eventId, lightboxOpen, manualPaused, narrationState, photos.length]);
+  }, [audioRef, eventId, featurePlaying, lightboxOpen, manualPaused, narrationState, photos.length]);
 
   useEffect(() => {
     if (!lightboxOpen) return undefined;
