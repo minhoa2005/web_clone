@@ -12,6 +12,7 @@ export default function EvidenceCard({ evidence, variant = 'dock' }) {
 
   const illustration = evidence.illustration;
   const initialSrc = illustration?.src ? pageUrl(illustration.src) : pageUrl(evidence.src);
+  const candidates = (illustration?.candidates || []).map((c) => pageUrl(c));
   const fallbackSrc = pageUrl(evidence.src);
   const altText = illustration?.title || illustration?.caption || `Bản sao trang ${evidence.page || ''} của ${TEXTBOOK.title}`;
 
@@ -23,9 +24,16 @@ export default function EvidenceCard({ evidence, variant = 'dock' }) {
         title={illustration?.title || undefined}
         decoding="async"
         onError={(e) => {
-          if (fallbackSrc && e.currentTarget.dataset.fallbackTried !== 'true') {
-            e.currentTarget.dataset.fallbackTried = 'true';
-            e.currentTarget.src = fallbackSrc;
+          const img = e.currentTarget;
+          const currentIndex = parseInt(img.dataset.candidateIndex || '0', 10);
+          const nextIndex = currentIndex + 1;
+
+          if (candidates.length && nextIndex < candidates.length) {
+            img.dataset.candidateIndex = String(nextIndex);
+            img.src = candidates[nextIndex];
+          } else if (fallbackSrc && img.dataset.fallbackTried !== 'true') {
+            img.dataset.fallbackTried = 'true';
+            img.src = fallbackSrc;
           }
         }}
       />

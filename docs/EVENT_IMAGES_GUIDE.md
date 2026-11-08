@@ -18,10 +18,17 @@ Tài liệu này hướng dẫn cách đặt tên file, chuẩn hoá định d�
 
 ---
 
-## 2. Cơ chế tự động nhận diện & Fallback an toàn
+## 2. Cơ chế tự động dò tìm đa định dạng (Format Cascading) & Fallback an toàn
 
-1. **Tự động nhận diện**: Hệ thống đã được lập trình sẵn để tự động nạp ảnh từ đường dẫn `public/assets/events/<event-id>.webp`. Khi bạn sao chép file ảnh vào thư mục này với tên chuẩn, ảnh sẽ lập tức hiển thị trên dải ruy-băng 3D bay quanh quả cầu và khi phát thuyết minh.
-2. **Fallback an toàn**: Nếu một sự kiện chưa kịp có file ảnh mới trong thư mục `public/assets/events/`, hệ thống sẽ tự động hiển thị trang giáo trình đối chiếu tương ứng để giao diện không bị gián đoạn hay xuất hiện lỗi ảnh hỏng.
+1. **Hỗ trợ đa định dạng tự động:** Hệ thống tự động dò tìm và tải file ảnh theo chuỗi ưu tiên:
+   - Thử định dạng WebP: `public/assets/events/<event-id>.webp`
+   - Nếu không có, thử JPG: `public/assets/events/<event-id>.jpg`
+   - Nếu không có, thử JPEG: `public/assets/events/<event-id>.jpeg`
+   - Nếu không có, thử PNG: `public/assets/events/<event-id>.png`
+   
+   👉 **Bạn có thể lưu ảnh theo bất kỳ đuôi nào trong 4 định dạng trên (`.webp`, `.jpg`, `.jpeg`, `.png`), hệ thống đều tự động nhận diện và hiển thị mượt mà mà không cần đổi đuôi file hay can thiệp code.**
+
+2. **Fallback an toàn về giáo trình:** Nếu một sự kiện chưa kịp có file ảnh mới (cả 4 định dạng trên đều chưa có), hệ thống sẽ tự động hiển thị trang giáo trình đối chiếu tương ứng để giao diện không bao giờ xuất hiện lỗi ảnh hỏng (broken image icon).
 
 ---
 

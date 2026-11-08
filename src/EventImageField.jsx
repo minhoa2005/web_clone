@@ -28,6 +28,7 @@ function buildPool(list) {
           id: eventImageKey,
           eventId: event.id,
           src: photoUrl(illustration),
+          candidates: (illustration.candidates || []).map((c) => photoUrl({ src: c })),
           fallbackSrc,
           title: illustration.title || event.short,
           caption: illustration.caption || event.short,
@@ -236,10 +237,18 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     aspectRatio: focusImage.item.aspect,
   } : undefined;
 
-  const handleImageFallback = (e, fallbackSrc) => {
-    if (fallbackSrc && e.currentTarget.dataset.fallbackTried !== 'true') {
-      e.currentTarget.dataset.fallbackTried = 'true';
-      e.currentTarget.src = fallbackSrc;
+  const handleImageFallback = (e, item) => {
+    const img = e.currentTarget;
+    const candidates = item?.candidates || [];
+    const currentIndex = parseInt(img.dataset.candidateIndex || '0', 10);
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex < candidates.length) {
+      img.dataset.candidateIndex = String(nextIndex);
+      img.src = candidates[nextIndex];
+    } else if (item?.fallbackSrc && img.dataset.fallbackTried !== 'true') {
+      img.dataset.fallbackTried = 'true';
+      img.src = item.fallbackSrc;
     }
   };
 
@@ -258,7 +267,7 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
         loading={copy === 'a' && index < 2 ? 'eager' : 'lazy'}
         fetchPriority={copy === 'a' && index < 2 ? 'high' : 'low'}
         decoding="async"
-        onError={(e) => handleImageFallback(e, item.fallbackSrc)}
+        onError={(e) => handleImageFallback(e, item)}
       />
     </figure>)}
   </div>;
@@ -277,7 +286,7 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
           alt={focusImage.item.title || focusImage.item.label || ''}
           draggable="false"
           decoding="async"
-          onError={(e) => handleImageFallback(e, focusImage.item.fallbackSrc)}
+          onError={(e) => handleImageFallback(e, focusImage.item)}
         />
         <figcaption>{focusImage.item.caption || focusImage.item.label}</figcaption>
       </figure>
