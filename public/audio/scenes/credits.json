@@ -119,5 +119,25 @@
     "bytes": 348816,
     "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
     "usage": "Contemporary sound recording used as reconstructed atmosphere; volume fades, timed excerpts and layering. Not an archival recording of the historical event."
+  },
+  {
+    "name": "diesel",
+    "file": "diesel.audio",
+    "source": "https://freesound.org/people/BeeProductive/sounds/395586/",
+    "author": "BeeProductive",
+    "license": "CC0",
+    "url": "https://cdn.freesound.org/previews/395/395586_4298084-lq.mp3",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Short, quiet engine-start reconstruction for the 1950 border-campaign scene; never an authentic campaign recording."
+  },
+  {
+    "name": "wheel-creak",
+    "file": "wheel-creak.audio",
+    "source": "https://freesound.org/people/craigsmith/sounds/438350/",
+    "author": "craigsmith",
+    "license": "CC0",
+    "url": "https://cdn.freesound.org/previews/438/438350_2524442-lq.mp3",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "usage": "Short wooden pulley and cart creak reconstruction for harbor rigging and artillery-hauling scenes; never an authentic historical recording."
   }
 ]

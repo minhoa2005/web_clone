@@ -31,9 +31,9 @@ const CUES = Object.freeze({
   }),
   'so-bo-1946': cue('diplomacy', 'Phòng họp, giấy tờ và micro.'),
   'ngoai-giao-1950': cue('shortwave', 'Tín hiệu phát thanh mở rộng ra xa.'),
-  'bien-gioi-1950': cue('mountain', 'Gió núi và nhịp bước được tái dựng.'),
+  'bien-gioi-1950': cue('border-campaign', 'Nhịp bước, động cơ xe và tín hiệu liên lạc được tái dựng.'),
   'dai-hoi-ii-1951': cue('assembly', 'Không gian đại hội giữa chiến khu.'),
-  'dien-bien-1954': cue('march-rise', 'Nhịp kéo pháo dần mở thành hợp âm chiến thắng.', 'Hò kéo pháo · Hoàng Vân', `${import.meta.env?.BASE_URL || '/'}audio/features/dien-bien-1954.audio`, 'https://www.hoangvan.org/ca-khuc/ho-keo-phao-3'),
+  'dien-bien-1954': cue('artillery-haul', 'Nhịp kéo pháo, tiếng bánh xe và hợp ca được tái dựng.', 'Hò kéo pháo · Hoàng Vân', `${import.meta.env?.BASE_URL || '/'}audio/features/dien-bien-1954.audio`, 'https://www.hoangvan.org/ca-khuc/ho-keo-phao-3'),
   'geneve-1954': cue('diplomacy', 'Tiếng phòng họp, giấy tờ và máy ảnh.'),
   'dai-hoi-iii-1960': cue('assembly', 'Tiếng phòng họp và giấy tờ, được dựng lại.'),
   'mau-than-1968': cue('tet-radio', 'Không khí Tết xa dần, tín hiệu phát thanh ngắt quãng.'),
@@ -57,7 +57,7 @@ export function getPresentationAudioCue(eventId) {
   const result = CUES[eventId] || cue('silence', '');
   const passage = {
     'thang-tam-1945': { climax: 29.8, end: 69.7 },
-    'dien-bien-1954': { climax: 73.44, end: 100 },
+    'dien-bien-1954': { climax: 73.44, end: 82.8 },
     'mua-xuan-1975': { climax: 25.82, end: 41.1 },
   }[eventId];
   if (result.musicUrl) return { ...result, afterNarration: {

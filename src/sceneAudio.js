@@ -33,9 +33,9 @@ export function fadeAudio(audio, target, duration = 600, complete) {
   }, 25);
   fades.set(audio, timer);
 }
-const layer = (name, at, volume, seconds) => ({ name, at, volume, seconds });
+const layer = (name, at, volume, seconds, loop = true, fadeIn = 900) => ({ name, at, volume, seconds, loop, fadeIn });
 const SCENES = {
-  harbor: [layer('harbor', 0, .19, 22)],
+  harbor: [layer('harbor', 0, .16, 22), layer('wheel-creak', 5, .075, 8, false, 180)],
   paper: [layer('paper', 0, .13, 7), layer('typewriter', 6, .11, 12)],
   assembly: [layer('crowd', 0, .09, 14), layer('paper', 9, .12, 7)],
   radio: [layer('radio', 0, .09, 10)],
@@ -45,11 +45,11 @@ const SCENES = {
   forest: [layer('forest', 0, .16, 22), layer('footsteps', 5, .13, 9)],
   'forest-radio': [layer('forest', 0, .14, 22), layer('radio', 12, .09, 7)],
   'crowd-rise': [layer('crowd', 0, .09, 10)],
+  'border-campaign': [layer('forest', 0, .12, 24), layer('footsteps', 2, .12, 11), layer('diesel', 5, .11, 8, false, 180), layer('radio', 14, .075, 5)],
   silence: [],
   diplomacy: [layer('crowd', 0, .07, 9), layer('paper', 6, .14, 8), layer('shutter', 15, .11, 3)],
   shortwave: [layer('radio', 0, .13, 13)],
-  mountain: [layer('forest', 0, .13, 22), layer('footsteps', 2, .16, 14), layer('radio', 16, .08, 5)],
-  'march-rise': [layer('footsteps', 0, .1, 9)],
+  'artillery-haul': [layer('footsteps', 0, .1, 17), layer('wheel-creak', 1.4, .11, 9, false, 180)],
   'tet-radio': [layer('city', 0, .11, 7), layer('radio', 7, .12, 5)],
   'victory-rise': [],
   ceremony: [layer('crowd', 0, .08, 9), layer('paper', 8, .11, 6)],
@@ -71,11 +71,11 @@ export function startPresentationSoundscape(profileName) {
       if (stopped) return;
       const audio = new Audio(source);
       audio.volume = 0;
-      audio.loop = true;
+      audio.loop = item.loop;
       players.push(audio);
       audio.play().then(() => {
         if (stopped) { audio.pause(); return; }
-        fadeAudio(audio, item.volume, 900);
+        fadeAudio(audio, item.volume, item.fadeIn);
         timers.push(setTimeout(() => fadeAudio(audio, 0, 1000, () => audio.pause()), item.seconds * 1000));
       }).catch(() => {});
     }, item.at * 1000));

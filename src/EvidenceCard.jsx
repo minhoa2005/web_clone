@@ -38,21 +38,13 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
     if (photos.length < 2 || manualPaused || lightboxOpen) return undefined;
 
     if (narrationState === 'playing') {
-      if (featurePlaying) {
-        const timer = window.setInterval(() => {
-          if (document.hidden) return;
-          setDirection('next');
-          setCurrentIndex((index) => (index + 1) % photos.length);
-        }, 4500);
-        return () => window.clearInterval(timer);
-      }
       const syncToNarration = () => {
         const audio = audioRef?.current;
         if (document.hidden || !audio || audio.paused || audio.ended || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
-        const nextIndex = Math.min(photos.length - 1, Math.floor((audio.currentTime / (audio.duration * .8)) * photos.length));
+        const nextIndex = Math.min(photos.length - 1, Math.floor((audio.currentTime / (audio.duration * .9)) * photos.length));
         setCurrentIndex((index) => {
-          if (index === nextIndex) return index;
-          setDirection(nextIndex > index ? 'next' : 'prev');
+          if (nextIndex <= index) return index;
+          setDirection('next');
           return nextIndex;
         });
       };
@@ -67,7 +59,7 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
       setCurrentIndex((index) => (index + 1) % photos.length);
     }, 6500);
     return () => window.clearInterval(timer);
-  }, [audioRef, eventId, featurePlaying, lightboxOpen, manualPaused, narrationState, photos.length]);
+  }, [audioRef, eventId, lightboxOpen, manualPaused, narrationState, photos.length]);
 
   useEffect(() => {
     if (!lightboxOpen) return undefined;
@@ -125,7 +117,7 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
   const photoDimensions = getImageDimensions(currentPhoto?.src);
   const photoAspect = photoDimensions?.aspect || getImageAspect(currentPhoto?.src, 1.33);
 
-  return <figure className={`evidence-card evidence-card--${variant}`} style={{ '--photo-aspect': photoAspect }}>
+  return <figure className={`evidence-card evidence-card--${variant}${featurePlaying && variant === 'presentation' ? ' evidence-card--milestone-hold' : ''}`} style={{ '--photo-aspect': photoAspect }}>
     <div className="evidence-card__frame">
       {imageFailed
         ? <div className="evidence-card__missing" role="img" aria-label={imageAlt}>Không tải được ảnh này</div>

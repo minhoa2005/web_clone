@@ -560,7 +560,7 @@ export default function App() {
         archiveAudio.ontimeupdate = () => {
           if (postNarration.kind === 'speech') return;
           const remaining = postNarration.end - archiveAudio.currentTime;
-          if (remaining < 1.5) archiveAudio.volume = Math.max(0, remaining / 1.5) * (postNarration.kind === 'song' ? .75 : 1);
+          if (remaining < .55) archiveAudio.volume = Math.max(0, remaining / .55) * (postNarration.kind === 'song' ? .75 : 1);
           if (remaining <= 0) {
             archiveAudio.pause();
             finishStep();
@@ -584,6 +584,7 @@ export default function App() {
         audio.onended = null;
         audio.onerror = null;
         if (cue.afterNarration) {
+          if (cue.musicUrl && backgroundMusic) backgroundMusic.currentTime = cue.afterNarration.climax;
           playPostNarrationAudio();
         }
         else finishStep();
