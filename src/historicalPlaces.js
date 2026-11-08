@@ -1,4 +1,5 @@
 import { EVENTS, LOCATIONS, PERIODS } from './history.js';
+import { getEventIllustration } from './eventImages.js';
 
 const COUNTRIES = {
   saigon: ['Việt Nam', 'Vietnam'], hanoi: ['Việt Nam', 'Vietnam'],
@@ -27,6 +28,7 @@ export const HISTORICAL_PLACES = EVENTS.map((event) => {
     region: `${period.range} · ${period.title}`,
     note: event.summary,
     annotation: event.note,
+    illustration: getEventIllustration(event.id),
     photos: event.pages.map((page) => ({
       src: `assets/sources/page-${page}.webp`,
       page,
@@ -44,11 +46,12 @@ export const REGION_ORDER = PERIODS.map((period) => `${period.range} · ${period
 // No transcription is available for the 2021 scan, so the card never invents one.
 export function eventEvidence(event) {
   const photo = event?.photos?.[0];
+  const illustration = event?.illustration || getEventIllustration(event?.id);
   if (photo?.src) {
-    return { kind: 'page', src: photo.src, page: photo.page, title: photo.title };
+    return { kind: 'page', src: photo.src, page: photo.page, title: photo.title, illustration };
   }
   if (event?.external?.url) {
-    return { kind: 'external', title: event.external.title, url: event.external.url };
+    return { kind: 'external', title: event.external.title, url: event.external.url, illustration };
   }
   return null;
 }
