@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { getImageAspect, getImageDimensions } from './imageMetadata.js';
 
 function pageUrl(src) {
   return `${import.meta.env.BASE_URL}${src}`;
@@ -113,8 +114,10 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
   };
   const photoCaption = currentPhoto.caption?.trim() || `Ảnh tư liệu ${currentIndex + 1}`;
   const imageAlt = photoCaption;
+  const photoDimensions = getImageDimensions(currentPhoto?.src);
+  const photoAspect = photoDimensions?.aspect || getImageAspect(currentPhoto?.src, 1.33);
 
-  return <figure className={`evidence-card evidence-card--${variant}`}>
+  return <figure className={`evidence-card evidence-card--${variant}`} style={{ '--photo-aspect': photoAspect }}>
     <div className="evidence-card__frame">
       {imageFailed
         ? <div className="evidence-card__missing" role="img" aria-label={imageAlt}>Không tải được ảnh này</div>
@@ -131,6 +134,8 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
             className={`evidence-card__image evidence-card__image--${direction}`}
             src={pageUrl(currentPhoto.src)}
             alt={imageAlt}
+            width={photoDimensions?.width}
+            height={photoDimensions?.height}
             decoding="async"
             onError={() => setImageFailed(true)}
           />
@@ -172,6 +177,8 @@ export default function EvidenceCard({ evidence, eventId, narrationState = 'idle
             className={`evidence-lightbox__image evidence-card__image--${direction}`}
             src={pageUrl(currentPhoto.src)}
             alt={imageAlt}
+            width={photoDimensions?.width}
+            height={photoDimensions?.height}
             decoding="async"
             onError={() => setImageFailed(true)}
           />}

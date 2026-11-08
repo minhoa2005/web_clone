@@ -1,9 +1,9 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MOTION, prefersReducedMotion } from './motion.js';
+import { getImageAspect, getImageDimensions } from './imageMetadata.js';
 
 const MAX_DESKTOP_ITEMS = 14;
 const MAX_MOBILE_ITEMS = 7;
-const IMAGE_ASPECTS = [0.78, 1.12, 0.92, 1.36, 0.86, 1.18, 0.72, 1.24];
 function photoUrl(photo) {
   return photo?.src ? `${import.meta.env.BASE_URL}${photo.src}` : '';
 }
@@ -24,6 +24,8 @@ function buildPool(list) {
       const eventImageKey = `${event.id}::${illustration.src}`;
       if (!seen.has(eventImageKey)) {
         seen.add(eventImageKey);
+        const dims = getImageDimensions(illustration.src);
+        const realAspect = dims?.aspect || getImageAspect(illustration.src, 1.33);
         items.push({
           id: eventImageKey,
           eventId: event.id,
@@ -33,14 +35,18 @@ function buildPool(list) {
           title: illustration.title || event.short,
           caption: illustration.caption || event.short,
           label: event.short,
-          aspect: IMAGE_ASPECTS[items.length % IMAGE_ASPECTS.length],
+          width: dims?.width,
+          height: dims?.height,
+          aspect: clamp(realAspect, 0.65, 1.95),
         });
       }
     } else {
-      (event.photos || []).forEach((photo, photoIndex) => {
+      (event.photos || []).forEach((photo) => {
         const eventImageKey = `${event.id}::${photo?.src}`;
         if (!photo?.src || seen.has(eventImageKey)) return;
         seen.add(eventImageKey);
+        const dims = getImageDimensions(photo.src);
+        const realAspect = dims?.aspect || getImageAspect(photo.src, 1.33);
         items.push({
           id: `${event.id}::${photo.src}`,
           eventId: event.id,
@@ -49,7 +55,9 @@ function buildPool(list) {
           title: photo.title || event.short,
           caption: event.short,
           label: event.short,
-          aspect: IMAGE_ASPECTS[(items.length + photoIndex) % IMAGE_ASPECTS.length],
+          width: dims?.width,
+          height: dims?.height,
+          aspect: clamp(realAspect, 0.65, 1.95),
         });
       });
     }
@@ -334,12 +342,36 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
     const currentIndex = parseInt(img.dataset.candidateIndex || '0', 10);
     const nextIndex = currentIndex + 1;
 
+    let nextSrc = '';
     if (nextIndex < candidates.length) {
       img.dataset.candidateIndex = String(nextIndex);
-      img.src = candidates[nextIndex];
+      nextSrc = candidates[nextIndex];
+      img.src = nextSrc;
     } else if (item?.fallbackSrc && img.dataset.fallbackTried !== 'true') {
       img.dataset.fallbackTried = 'true';
-      img.src = item.fallbackSrc;
+      nextSrc = item.fallbackSrc;
+      img.src = nextSrc;
+    }
+
+    if (nextSrc) {
+      const fallbackDims = getImageDimensions(nextSrc);
+      if (fallbackDims?.aspect) {
+        item.aspect = clamp(fallbackDims.aspect, 0.65, 1.95);
+        item.width = fallbackDims.width;
+        item.height = fallbackDims.height;
+      }
+    }
+  };
+
+  const handleImageLoad = (e, item) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      const measured = Math.round((img.naturalWidth / img.naturalHeight) * 1000) / 1000;
+      if (!item.aspect || Math.abs(item.aspect - measured) > 0.05) {
+        item.aspect = clamp(measured, 0.65, 1.95);
+        item.width = img.naturalWidth;
+        item.height = img.naturalHeight;
+      }
     }
   };
 
@@ -355,10 +387,13 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
         src={item.src}
         alt={item.title || ''}
         title={item.title || item.label}
+        width={item.width}
+        height={item.height}
         draggable="false"
         loading={copy === 'a' && index < 2 ? 'eager' : 'lazy'}
         fetchPriority={copy === 'a' && index < 2 ? 'high' : 'low'}
         decoding="async"
+        onLoad={(e) => handleImageLoad(e, item)}
         onError={(e) => handleImageFallback(e, item)}
       />
     </figure>)}
@@ -376,6 +411,8 @@ export default function EventImageField({ list, selected, focusRevision, focusRe
         <img
           src={focusImage.item.src}
           alt={focusImage.item.title || focusImage.item.label || ''}
+          width={focusImage.item.width}
+          height={focusImage.item.height}
           draggable="false"
           decoding="async"
           onError={(e) => handleImageFallback(e, focusImage.item)}
