@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fadeAudio, liftMusic, musicStartTime, getAudioSource } from '../src/sceneAudio.js';
 import { getPresentationAudioCue } from '../src/presentationAudio.js';
+import { EVENTS } from '../src/history.js';
 
 test('1975 features the requested song and retains a post-narration climax', () => {
   const cue = getPresentationAudioCue('mua-xuan-1975');
@@ -17,6 +18,20 @@ test('each music milestone continues the same song without a separate climax see
     assert.ok(cue.afterNarration.climax > 20);
     assert.ok(cue.afterNarration.end > cue.afterNarration.climax);
   }
+});
+
+test('milestone excerpts follow their event-specific musical shape', () => {
+  const august = getPresentationAudioCue('thang-tam-1945').afterNarration;
+  const artillery = getPresentationAudioCue('dien-bien-1954').afterNarration;
+  assert.ok(august.duration >= 4.5 && august.duration <= 6, 'August Revolution should resolve as a short sting');
+  assert.ok(artillery.duration >= 28, 'Hò kéo pháo should carry past the refrain payoff');
+});
+
+test('historical events use distinct reconstructed sound scenes', () => {
+  const profiles = EVENTS.map((event) => getPresentationAudioCue(event.id).profile);
+  const counts = profiles.reduce((result, profile) => result.set(profile, (result.get(profile) || 0) + 1), new Map());
+  assert.ok(new Set(profiles).size >= EVENTS.length - 1);
+  assert.ok(Math.max(...counts.values()) <= 2);
 });
 
 test('the narration handoff raises music immediately without seeking or restarting', (t) => {
